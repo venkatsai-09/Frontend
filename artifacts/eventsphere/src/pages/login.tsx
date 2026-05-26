@@ -1,4 +1,4 @@
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -15,6 +15,7 @@ const loginSchema = z.object({
 });
 
 export default function Login() {
+  const [, setLocation] = useLocation();
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -24,7 +25,11 @@ export default function Login() {
   });
 
   const onSubmit = (values: z.infer<typeof loginSchema>) => {
-    console.log("Login submitted:", values);
+    if (values.email.toLowerCase().includes("organizer") || values.email.toLowerCase().includes("org@")) {
+      setLocation("/organizer");
+    } else {
+      setLocation("/attendee");
+    }
   };
 
   return (
@@ -115,8 +120,8 @@ export default function Login() {
 
           <div className="mt-8 text-center text-sm text-muted-foreground">
             Don't have an account?{" "}
-            <Link href="/signup" className="text-primary hover:text-primary/80 font-medium transition-colors">
-              Create Account
+            <Link href="/role-select" className="text-primary hover:text-primary/80 font-medium transition-colors">
+              Sign Up
             </Link>
           </div>
         </div>

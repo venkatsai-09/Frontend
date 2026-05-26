@@ -33,7 +33,7 @@ export function Navbar() {
           <Link href="/login">
             <Button variant="ghost" className="text-white hover:text-white hover:bg-white/10">Login</Button>
           </Link>
-          <Link href="/signup">
+          <Link href="/role-select">
             <Button className="bg-primary hover:bg-primary/90 text-white shadow-[0_0_15px_rgba(124,58,237,0.4)] transition-all hover:shadow-[0_0_25px_rgba(124,58,237,0.6)]">Sign Up</Button>
           </Link>
         </div>
@@ -56,7 +56,7 @@ export function Navbar() {
               <Link href="/login">
                 <Button variant="outline" className="w-full justify-center border-white/20 text-white hover:bg-white/10">Login</Button>
               </Link>
-              <Link href="/signup">
+              <Link href="/role-select">
                 <Button className="w-full justify-center bg-primary text-white hover:bg-primary/90">Sign Up</Button>
               </Link>
             </div>

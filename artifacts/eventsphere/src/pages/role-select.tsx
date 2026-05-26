@@ -1,4 +1,4 @@
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Users, Briefcase } from "lucide-react";
 import { motion } from "framer-motion";
@@ -6,9 +6,11 @@ import { useState } from "react";
 
 export default function RoleSelect() {
   const [selectedRole, setSelectedRole] = useState<"attendee" | "organizer" | null>(null);
+  const [, setLocation] = useLocation();
 
   const handleContinue = () => {
-    console.log("Selected role:", selectedRole);
+    if (selectedRole === "attendee") setLocation("/signup/attendee");
+    else if (selectedRole === "organizer") setLocation("/signup/organizer");
   };
 
   return (

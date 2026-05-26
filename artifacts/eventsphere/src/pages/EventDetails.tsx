@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useParams } from "wouter";
+import { useParams, useLocation } from "wouter";
+import { Navbar } from "@/components/layout/Navbar";
 import { 
   Calendar, MapPin, Clock, Users, Share2, Heart, 
   Map as MapIcon, ChevronRight, CheckCircle2, User, PlayCircle, Star
@@ -57,6 +58,7 @@ const EVENT_DATA = {
 
 export default function EventDetails() {
   const { id } = useParams();
+  const [, setLocation] = useLocation();
   const [saved, setSaved] = useState(false);
   const [quantities, setQuantities] = useState<Record<string, number>>({ t1: 1, t2: 0, t3: 0 });
 
@@ -74,8 +76,9 @@ export default function EventDetails() {
 
   return (
     <div className="min-h-screen bg-background pb-20 lg:pb-0">
+      <Navbar />
       {/* Hero Banner */}
-      <div className="relative w-full h-[400px] md:h-[500px] bg-gradient-to-br from-indigo-900 via-purple-900 to-blue-900 flex items-end pb-16 px-6 lg:px-12">
+      <div className="relative w-full h-[400px] md:h-[500px] mt-16 bg-gradient-to-br from-indigo-900 via-purple-900 to-blue-900 flex items-end pb-16 px-6 lg:px-12">
         <div className="absolute inset-0 bg-black/40" />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-transparent" />
         
@@ -307,7 +310,11 @@ export default function EventDetails() {
                 <span className="text-muted-foreground">Total</span>
                 <span className="text-2xl font-bold text-foreground">₹{selectedTotal}</span>
               </div>
-              <Button className="w-full bg-gradient-to-r from-primary to-blue-600 hover:from-primary/90 hover:to-blue-600/90 text-white font-semibold py-6 text-lg shadow-lg shadow-primary/25" disabled={selectedTotal === 0}>
+              <Button
+                className="w-full bg-gradient-to-r from-primary to-blue-600 hover:from-primary/90 hover:to-blue-600/90 text-white font-semibold py-6 text-lg shadow-lg shadow-primary/25"
+                disabled={selectedTotal === 0}
+                onClick={() => setLocation(`/events/${id}/register`)}
+              >
                 Checkout
               </Button>
             </div>
@@ -322,7 +329,7 @@ export default function EventDetails() {
           <p className="text-sm text-muted-foreground">Starts from</p>
           <p className="text-xl font-bold text-foreground">₹499</p>
         </div>
-        <Button className="bg-gradient-to-r from-primary to-blue-600 px-8">
+        <Button className="bg-gradient-to-r from-primary to-blue-600 px-8" onClick={() => setLocation(`/events/${id}/register`)}>
           Get Tickets
         </Button>
       </div>

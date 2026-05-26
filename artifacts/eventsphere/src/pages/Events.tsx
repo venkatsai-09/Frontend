@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "wouter";
+import { Navbar } from "@/components/layout/Navbar";
 import { 
   Search, Filter, MapPin, Calendar, Star, Heart, 
   Menu, X
@@ -131,6 +132,7 @@ export default function Events() {
 
   return (
     <div className="min-h-screen bg-background pb-12">
+      <Navbar />
       {/* Hero Header */}
       <div className="relative pt-24 pb-16 px-6 sm:px-12 bg-card border-b border-border">
         <div className="absolute inset-0 overflow-hidden pointer-events-none">

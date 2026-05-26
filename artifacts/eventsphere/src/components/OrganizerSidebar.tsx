@@ -1,7 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { 
   LayoutDashboard, PlusCircle, CalendarDays, Users, BarChart3, 
-  Sparkles, CreditCard, Settings
+  Sparkles, CreditCard, Settings, Search
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -9,10 +9,13 @@ import { Button } from "@/components/ui/button";
 
 const NAV_ITEMS = [
   { name: "Dashboard", icon: LayoutDashboard, href: "/organizer" },
+  { name: "Scanner", icon: Search, href: "/organizer/scanner" },
   { name: "Create Event", icon: PlusCircle, href: "/organizer/create-event" },
   { name: "Manage Events", icon: CalendarDays, href: "/organizer/manage" },
+  { name: "History", icon: CalendarDays, href: "/organizer/history" },
   { name: "Attendees", icon: Users, href: "/organizer/attendees" },
   { name: "Analytics", icon: BarChart3, href: "/organizer/analytics" },
+  { name: "Profile", icon: Users, href: "/organizer/profile" },
   { name: "AI Tools", icon: Sparkles, href: "/organizer/ai-tools" },
   { name: "Payments", icon: CreditCard, href: "/organizer/payments" },
 ];
