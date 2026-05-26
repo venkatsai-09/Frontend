@@ -10,6 +10,7 @@ import RoleSelect from "@/pages/role-select";
 import Events from "@/pages/Events";
 import EventDetails from "@/pages/EventDetails";
 import OrganizerDashboard from "@/pages/OrganizerDashboard";
+import CreateEvent from "@/pages/CreateEvent";
 
 const queryClient = new QueryClient();
 
@@ -23,6 +24,7 @@ function Router() {
       <Route path="/events" component={Events} />
       <Route path="/events/:id" component={EventDetails} />
       <Route path="/organizer" component={OrganizerDashboard} />
+      <Route path="/organizer/create-event" component={CreateEvent} />
       <Route component={NotFound} />
     </Switch>
   );

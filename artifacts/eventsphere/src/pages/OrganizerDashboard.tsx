@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Link } from "wouter";
 import { 
   LayoutDashboard, PlusCircle, CalendarDays, Users, BarChart3, 
   Sparkles, CreditCard, Settings, Search, Bell, Menu,
@@ -17,16 +18,9 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { 
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow 
 } from "@/components/ui/table";
+import { OrganizerSidebar } from "@/components/OrganizerSidebar";
 
-const NAV_ITEMS = [
-  { name: "Dashboard", icon: LayoutDashboard, id: "dashboard" },
-  { name: "Create Event", icon: PlusCircle, id: "create-event" },
-  { name: "Manage Events", icon: CalendarDays, id: "manage-events" },
-  { name: "Attendees", icon: Users, id: "attendees" },
-  { name: "Analytics", icon: BarChart3, id: "analytics" },
-  { name: "AI Tools", icon: Sparkles, id: "ai-tools" },
-  { name: "Payments", icon: CreditCard, id: "payments" },
-];
+const PIE_COLORS = ["#8b5cf6", "#3b82f6", "#06b6d4", "#10b981", "#f59e0b"];
 
 const REVENUE_DATA = [
   { name: "Jan", value: 42000 },
@@ -54,8 +48,6 @@ const POPULAR_EVENTS_DATA = [
   { name: "Data Science", value: 357 },
 ];
 
-const PIE_COLORS = ["#8b5cf6", "#3b82f6", "#06b6d4", "#10b981", "#f59e0b"];
-
 const RECENT_EVENTS = [
   { id: 1, name: "AI Summit 2026", category: "Technology", date: "15/08/2026", revenue: 124950, tickets: 500, status: "Live" },
   { id: 2, name: "Startup Connect India", category: "Business", date: "22/08/2026", revenue: 89940, tickets: 600, status: "Upcoming" },
@@ -76,57 +68,11 @@ const getStatusColor = (status: string) => {
 };
 
 export default function OrganizerDashboard() {
-  const [activeSection, setActiveSection] = useState("dashboard");
-
-  const SidebarContent = () => (
-    <div className="flex flex-col h-full h-[100dvh]">
-      <div className="p-6">
-        <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-blue-400">
-          EventSphere
-        </h1>
-        <Badge variant="outline" className="mt-1 border-primary/50 text-primary/80">Organizer</Badge>
-      </div>
-
-      <nav className="flex-1 px-4 space-y-2 overflow-y-auto">
-        {NAV_ITEMS.map((item) => (
-          <button
-            key={item.id}
-            onClick={() => setActiveSection(item.id)}
-            data-testid={`nav-${item.id}`}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
-              activeSection === item.id
-                ? "bg-gradient-to-r from-primary to-primary/80 text-primary-foreground shadow-lg shadow-primary/25"
-                : "text-muted-foreground hover:bg-white/5 hover:text-foreground"
-            }`}
-          >
-            <item.icon className={`w-5 h-5 ${activeSection === item.id ? "text-primary-foreground" : ""}`} />
-            <span className="font-medium">{item.name}</span>
-          </button>
-        ))}
-      </nav>
-
-      <div className="p-4 mt-auto border-t border-white/10">
-        <div className="flex items-center gap-3 px-2 py-3 rounded-xl bg-white/5 backdrop-blur-md border border-white/10">
-          <Avatar className="h-10 w-10 border border-primary/50">
-            <AvatarFallback className="bg-primary/20 text-primary">RM</AvatarFallback>
-          </Avatar>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-foreground truncate">Rahul Mehta</p>
-            <p className="text-xs text-primary/80 truncate">Pro Organizer</p>
-          </div>
-          <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
-            <Settings className="w-5 h-5" />
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
-
   return (
     <div className="min-h-screen bg-background flex flex-col md:flex-row text-foreground selection:bg-primary/30">
       {/* Desktop Sidebar */}
       <aside className="hidden md:block w-[240px] shrink-0 border-r border-white/10 bg-card/50 backdrop-blur-xl z-20">
-        <SidebarContent />
+        <OrganizerSidebar />
       </aside>
 
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
@@ -144,11 +90,11 @@ export default function OrganizerDashboard() {
                 </Button>
               </SheetTrigger>
               <SheetContent side="left" className="p-0 w-[240px] bg-card border-r-white/10">
-                <SidebarContent />
+                <OrganizerSidebar />
               </SheetContent>
             </Sheet>
             <h2 className="text-lg font-semibold capitalize hidden sm:block">
-              {NAV_ITEMS.find(i => i.id === activeSection)?.name || "Dashboard"}
+              Dashboard
             </h2>
           </div>
 
