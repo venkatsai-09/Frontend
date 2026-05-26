@@ -9,6 +9,7 @@ import Signup from "@/pages/signup";
 import RoleSelect from "@/pages/role-select";
 import Events from "@/pages/Events";
 import EventDetails from "@/pages/EventDetails";
+import OrganizerDashboard from "@/pages/OrganizerDashboard";
 
 const queryClient = new QueryClient();
 
@@ -21,6 +22,7 @@ function Router() {
       <Route path="/role-select" component={RoleSelect} />
       <Route path="/events" component={Events} />
       <Route path="/events/:id" component={EventDetails} />
+      <Route path="/organizer" component={OrganizerDashboard} />
       <Route component={NotFound} />
     </Switch>
   );
