@@ -1,4 +1,5 @@
 import { useLocation } from "wouter";
+import { useEffect, useState } from "react";
 import { Check, Download, Home, Calendar, MapPin, User, Ticket as TicketIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -6,14 +7,32 @@ import { Card, CardContent } from "@/components/ui/card";
 export default function TicketSuccess() {
   const [, setLocation] = useLocation();
 
-  const ticketData = {
-    eventName: "Global Tech Summit 2024",
-    attendeeName: "Rahul Mehta",
-    date: "March 15, 2024",
-    venue: "Grand Convention Center, Mumbai",
-    ticketId: "#EVT-8291-XL",
-    type: "Regular Entry",
-  };
+  // Try to load latest ticket from backend, fallback to placeholders
+  const [ticketData, setTicketData] = useState<any>({
+    eventName: '',
+    attendeeName: '',
+    date: '',
+    venue: '',
+    ticketId: '',
+    type: '',
+  });
+
+  // attempt fetch (best-effort)
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const res = await fetch('/api/tickets/latest');
+        if (res.ok) {
+          const json = await res.json();
+          if (mounted) setTicketData(json);
+        }
+      } catch (e) {
+        // ignore - use placeholders
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4 py-12">
@@ -78,12 +97,12 @@ export default function TicketSuccess() {
                 <div className="w-32 h-32 relative bg-white">
                   {/* Grid pattern for mock QR */}
                   <div className="grid grid-cols-8 grid-rows-8 gap-0.5 w-full h-full opacity-90">
-                    {Array.from({ length: 64 }).map((_, i) => (
-                      <div 
-                        key={i} 
-                        className={`${Math.random() > 0.4 ? 'bg-black' : 'bg-transparent'} rounded-[1px]`} 
-                      />
-                    ))}
+                    {Array.from({ length: 64 }).map((_, i) => {
+                      // deterministic pattern based on ticketId to avoid demo randomness
+                      const seed = (ticketData?.ticketId || '0').split('').reduce((a:any,b:any)=>a + b.charCodeAt(0), 0) + i;
+                      const filled = seed % 3 === 0;
+                      return <div key={i} className={`${filled ? 'bg-black' : 'bg-transparent'} rounded-[1px]`} />
+                    })}
                   </div>
                   {/* QR Core boxes */}
                   <div className="absolute top-0 left-0 w-8 h-8 border-[3px] border-black bg-white flex items-center justify-center p-1">

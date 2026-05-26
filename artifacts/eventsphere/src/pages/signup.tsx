@@ -9,16 +9,28 @@ import { Form, FormControl, FormField, FormItem, FormMessage } from "@/component
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { motion } from "framer-motion";
 
-const signupSchema = z.object({
-  fullName: z.string().min(2, "Full name is required"),
-  email: z.string().email("Please enter a valid email address"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
-  confirmPassword: z.string(),
-  role: z.string({ required_error: "Please select a role" })
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords do not match",
-  path: ["confirmPassword"],
-});
+const signupSchema = z
+  .object({
+    fullName: z
+      .string()
+      .min(2, "Full name must be at least 2 characters")
+      .refine((s) => s.trim().length > 0, { message: "Full name is required" }),
+    email: z
+      .string()
+      .min(1, "Email is required")
+      .email("Please enter a valid email address")
+      .refine((s) => s.trim().length > 0, { message: "Email is required" }),
+    password: z
+      .string()
+      .min(8, "Password must be at least 8 characters")
+      .refine((s) => s.trim().length > 0, { message: "Password is required" }),
+    confirmPassword: z.string().min(1, "Confirm password is required"),
+    role: z.string().min(1, "Please select a role").refine((s) => s.trim().length > 0, { message: "Please select a role" }),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
+  });
 
 export default function Signup() {
   const form = useForm<z.infer<typeof signupSchema>>({
@@ -32,7 +44,26 @@ export default function Signup() {
   });
 
   const onSubmit = (values: z.infer<typeof signupSchema>) => {
-    console.log("Signup submitted:", values);
+    // Attempt to call backend signup endpoint if available
+    (async () => {
+      try {
+        const res = await fetch("/api/auth/signup", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(values),
+        });
+        if (!res.ok) {
+          const text = await res.text().catch(() => res.statusText);
+          // show a simple client-side notification for now
+          console.error("Signup failed:", text || res.statusText);
+        } else {
+          // redirect or show success - keep console log for now
+          console.log("Signup successful");
+        }
+      } catch (err) {
+        console.error("Signup request error:", err);
+      }
+    })();
   };
 
   return (
@@ -70,7 +101,7 @@ export default function Signup() {
                     <Label className="text-white">Full Name</Label>
                     <FormControl>
                       <Input 
-                        placeholder="John Doe" 
+                        placeholder="Your full name" 
                         {...field} 
                         className="bg-white/5 border-white/10 text-white placeholder:text-white/30 focus-visible:ring-primary"
                       />

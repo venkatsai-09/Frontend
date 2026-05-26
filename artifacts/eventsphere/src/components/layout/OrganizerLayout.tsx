@@ -3,6 +3,7 @@ import { Search, Bell, Menu, PlusCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { useFetch } from "@/lib/backend";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { OrganizerSidebar } from "@/components/OrganizerSidebar";
 import { Link } from "wouter";
@@ -64,7 +65,7 @@ export function OrganizerLayout({ children, title }: OrganizerLayoutProps) {
             </Link>
 
             <Avatar className="h-8 w-8 sm:hidden shrink-0">
-              <AvatarFallback className="bg-primary/20 text-primary">RM</AvatarFallback>
+              <SmallAvatarFallback />
             </Avatar>
           </div>
         </header>
@@ -77,5 +78,19 @@ export function OrganizerLayout({ children, title }: OrganizerLayoutProps) {
         </div>
       </main>
     </div>
+  );
+}
+
+function SmallAvatarFallback() {
+  const { data } = useFetch<{ name?: string; id?: string }>("/api/users/me");
+  const name = data?.name?.trim() || "Organizer";
+  const initials = name
+    .split(" ")
+    .map((p) => p[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+  return (
+    <AvatarFallback className="bg-primary/20 text-primary">{initials}</AvatarFallback>
   );
 }

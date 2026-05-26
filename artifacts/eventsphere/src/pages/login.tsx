@@ -10,8 +10,8 @@ import { SiGoogle } from "react-icons/si";
 import { motion } from "framer-motion";
 
 const loginSchema = z.object({
-  email: z.string().email("Please enter a valid email address"),
-  password: z.string().min(1, "Password is required"),
+  email: z.string().min(1, "Email is required").email("Please enter a valid email address").refine(s => s.trim().length > 0, { message: "Email is required" }),
+  password: z.string().min(8, "Password must be at least 8 characters").refine(s => s.trim().length > 0, { message: "Password is required" }),
 });
 
 export default function Login() {
@@ -25,11 +25,39 @@ export default function Login() {
   });
 
   const onSubmit = (values: z.infer<typeof loginSchema>) => {
-    if (values.email.toLowerCase().includes("organizer") || values.email.toLowerCase().includes("org@")) {
-      setLocation("/organizer");
-    } else {
-      setLocation("/attendee");
-    }
+    // Trim inputs
+    const email = values.email.trim();
+    const password = values.password;
+
+    (async () => {
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
+        });
+
+        if (res.status === 401 || res.status === 400) {
+          // show error using FormMessage - trigger by throwing
+          form.setError('email', { type: 'manual', message: 'Invalid login credentials' });
+          form.setError('password', { type: 'manual', message: '' });
+          return;
+        }
+
+        if (!res.ok) {
+          // fallback: treat as invalid credentials for UX
+          form.setError('email', { type: 'manual', message: 'Invalid login credentials' });
+          return;
+        }
+
+        const body = await res.json().catch(() => ({}));
+        // navigate based on role returned by backend or default to attendee
+        const role = (body && body.role) || (email.toLowerCase().includes('organizer') ? 'organizer' : 'attendee');
+        setLocation(role === 'organizer' ? '/organizer' : '/attendee');
+      } catch (err) {
+        form.setError('email', { type: 'manual', message: 'Invalid login credentials' });
+      }
+    })();
   };
 
   return (

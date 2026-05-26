@@ -11,47 +11,11 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow 
 } from "@/components/ui/table";
 import { OrganizerLayout } from "@/components/layout/OrganizerLayout";
-
-const PAST_EVENTS = [
-  { 
-    id: 1, 
-    name: "Tech Summit 2023", 
-    date: "Dec 10, 2023", 
-    attendees: 450, 
-    revenue: 89000, 
-    status: "Completed",
-    category: "Technology"
-  },
-  { 
-    id: 2, 
-    name: "Web3 Workshop", 
-    date: "Nov 15, 2023", 
-    attendees: 120, 
-    revenue: 24000, 
-    status: "Completed",
-    category: "Workshop"
-  },
-  { 
-    id: 3, 
-    name: "Design Meetup", 
-    date: "Oct 05, 2023", 
-    attendees: 85, 
-    revenue: 0, 
-    status: "Completed",
-    category: "Networking"
-  },
-  { 
-    id: 4, 
-    name: "Developer Conference", 
-    date: "Aug 22, 2023", 
-    attendees: 600, 
-    revenue: 150000, 
-    status: "Completed",
-    category: "Conference"
-  },
-];
+import { useFetch } from "@/lib/backend";
 
 export default function OrganizerHistory() {
+  const { data: pastEvents, isLoading } = useFetch<Array<any>>("/api/organizer/events/past");
+
   return (
     <OrganizerLayout title="Event History">
       <div className="space-y-6">
@@ -76,45 +40,51 @@ export default function OrganizerHistory() {
 
         {/* Stats Summary */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card className="glass-panel border-white/5">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 rounded-xl bg-primary/10">
-                  <Calendar className="w-6 h-6 text-primary" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Total Past Events</p>
-                  <h3 className="text-2xl font-bold">14 Events</h3>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="glass-panel border-white/5">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 rounded-xl bg-green-500/10">
-                  <Users className="w-6 h-6 text-green-400" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Lifetime Attendees</p>
-                  <h3 className="text-2xl font-bold">2,840</h3>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="glass-panel border-white/5">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 rounded-xl bg-blue-500/10">
-                  <TrendingUp className="w-6 h-6 text-blue-400" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Total Past Revenue</p>
-                  <h3 className="text-2xl font-bold">₹8,42,000</h3>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          {isLoading ? (
+            <div className="col-span-full text-center py-8 text-muted-foreground">Loading summary…</div>
+          ) : (
+            <>
+              <Card className="glass-panel border-white/5">
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 rounded-xl bg-primary/10">
+                      <Calendar className="w-6 h-6 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Total Past Events</p>
+                      <h3 className="text-2xl font-bold">{pastEvents?.length ?? 0} Events</h3>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="glass-panel border-white/5">
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 rounded-xl bg-green-500/10">
+                      <Users className="w-6 h-6 text-green-400" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Lifetime Attendees</p>
+                      <h3 className="text-2xl font-bold">—</h3>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="glass-panel border-white/5">
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 rounded-xl bg-blue-500/10">
+                      <TrendingUp className="w-6 h-6 text-blue-400" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Total Past Revenue</p>
+                      <h3 className="text-2xl font-bold">—</h3>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </>
+          )}
         </div>
 
         {/* Events Table */}
@@ -132,7 +102,7 @@ export default function OrganizerHistory() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {PAST_EVENTS.map((event) => (
+                {(pastEvents || []).map((event) => (
                   <TableRow key={event.id} className="border-white/10 hover:bg-white/5 transition-colors">
                     <TableCell>
                       <div>

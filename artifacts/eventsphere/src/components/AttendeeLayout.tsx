@@ -10,9 +10,36 @@ import {
   Sheet, SheetContent, SheetTrigger 
 } from "@/components/ui/sheet";
 import { useState } from "react";
+import { useFetch } from "@/lib/backend";
 
 interface AttendeeLayoutProps {
   children: React.ReactNode;
+}
+
+function UserInfo() {
+  const { data } = useFetch<{ name?: string; role?: string; id?: string }>("/api/users/me");
+  const name = data?.name?.trim() || "User";
+  const role = data?.role?.trim() || "Attendee";
+  const initials = name
+    .split(" ")
+    .map((p) => p[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+  const seed = data?.id || name.replace(/\s+/g, "_");
+
+  return (
+    <>
+      <div className="text-right hidden sm:block">
+        <p className="text-sm font-medium leading-none">{name}</p>
+        <p className="text-xs text-muted-foreground">{role}</p>
+      </div>
+      <Avatar className="h-9 w-9 border border-primary/20">
+        <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(seed)}`} />
+        <AvatarFallback>{initials}</AvatarFallback>
+      </Avatar>
+    </>
+  );
 }
 
 export function AttendeeLayout({ children }: AttendeeLayoutProps) {
@@ -111,16 +138,9 @@ export function AttendeeLayout({ children }: AttendeeLayoutProps) {
               <Bell className="w-5 h-5" />
               <span className="absolute top-2 right-2 w-2 h-2 bg-primary rounded-full border-2 border-card" />
             </Button>
-            <div className="flex items-center gap-3 pl-2 border-l border-border">
-              <div className="text-right hidden sm:block">
-                <p className="text-sm font-medium leading-none">John Doe</p>
-                <p className="text-xs text-muted-foreground">Attendee</p>
-              </div>
-              <Avatar className="h-9 w-9 border border-primary/20">
-                <AvatarImage src="https://api.dicebear.com/7.x/avataaars/svg?seed=John" />
-                <AvatarFallback>JD</AvatarFallback>
-              </Avatar>
-            </div>
+                <div className="flex items-center gap-3 pl-2 border-l border-border">
+                  <UserInfo />
+                </div>
           </div>
         </header>
 

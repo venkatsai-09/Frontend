@@ -6,37 +6,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
-const PAST_EVENTS = [
-  { 
-    id: 1, 
-    title: "AI Summit 2026", 
-    date: "15/08/2026", 
-    location: "Bengaluru, KA", 
-    ticketType: "VIP Pass",
-    status: "Upcoming",
-    idCode: "EVT-8291-A"
-  },
-  { 
-    id: 5, 
-    title: "Tech Innovators Conference", 
-    date: "18/07/2026", 
-    location: "Hyderabad, TS", 
-    ticketType: "General Access",
-    status: "Attended",
-    idCode: "EVT-7102-C"
-  },
-  { 
-    id: 2, 
-    title: "Startup Connect India", 
-    date: "22/06/2026", 
-    location: "Mumbai, MH", 
-    ticketType: "Early Bird",
-    status: "Attended",
-    idCode: "EVT-6543-B"
-  },
-];
+import { useFetch } from "@/lib/backend";
 
 export default function AttendeeHistory() {
+  const { data: pastEvents, isLoading } = useFetch<Array<any>>("/api/users/me/tickets");
+
   return (
     <AttendeeLayout>
       <div className="max-w-5xl mx-auto space-y-8">
@@ -46,7 +20,13 @@ export default function AttendeeHistory() {
         </div>
 
         <div className="grid grid-cols-1 gap-6">
-          {PAST_EVENTS.map(event => (
+          {isLoading && <div className="col-span-full text-center py-20 text-muted-foreground">Loading tickets…</div>}
+
+          {!isLoading && (!pastEvents || pastEvents.length === 0) && (
+            <div className="col-span-full text-center py-20 text-muted-foreground">You have no tickets yet.</div>
+          )}
+
+          {!isLoading && pastEvents && pastEvents.map((event) => (
             <Card key={event.id} className="glass-panel border-white/10 overflow-hidden group hover:border-primary/30 transition-all">
               <CardContent className="p-0">
                 <div className="flex flex-col md:flex-row">
@@ -55,18 +35,13 @@ export default function AttendeeHistory() {
                     <div className="flex items-start justify-between">
                       <div className="space-y-1">
                         <Badge variant={event.status === "Upcoming" ? "default" : "secondary"} className="mb-2">
-                          {event.status === "Upcoming" ? (
-                            <Clock className="w-3 h-3 mr-1" />
-                          ) : (
-                            <CheckCircle2 className="w-3 h-3 mr-1" />
-                          )}
                           {event.status}
                         </Badge>
-                        <h3 className="text-xl font-bold group-hover:text-primary transition-colors">{event.title}</h3>
+                        <h3 className="text-xl font-bold group-hover:text-primary transition-colors">{event.title || event.name}</h3>
                       </div>
                       <div className="text-right hidden sm:block">
                         <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Ticket ID</p>
-                        <p className="font-mono text-sm">{event.idCode}</p>
+                        <p className="font-mono text-sm">{event.idCode || event.ticketId || event.code}</p>
                       </div>
                     </div>
 
@@ -81,7 +56,7 @@ export default function AttendeeHistory() {
                       </div>
                       <div className="flex items-center text-muted-foreground">
                         <Ticket className="w-4 h-4 mr-2 text-primary/70" />
-                        <span className="text-sm">{event.ticketType}</span>
+                        <span className="text-sm">{event.ticketType || event.type || 'Ticket'}</span>
                       </div>
                     </div>
 
@@ -94,11 +69,6 @@ export default function AttendeeHistory() {
                   {/* Right: QR Code Placeholder */}
                   <div className="w-full md:w-48 bg-muted/30 border-t md:border-t-0 md:border-l border-white/10 flex flex-col items-center justify-center p-6 space-y-3">
                     <div className="w-24 h-24 bg-card rounded-xl border border-white/10 flex items-center justify-center relative group-hover:scale-105 transition-transform duration-300">
-                      <div className="grid grid-cols-4 gap-1 p-2 opacity-40">
-                        {Array.from({ length: 16 }).map((_, i) => (
-                          <div key={i} className={`w-3 h-3 rounded-sm ${Math.random() > 0.5 ? 'bg-foreground' : 'bg-transparent'}`} />
-                        ))}
-                      </div>
                       <QrCode className="w-8 h-8 text-primary absolute" />
                     </div>
                     <Button variant="ghost" size="sm" className="text-xs h-8">View QR Code</Button>

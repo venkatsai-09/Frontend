@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useFetch } from "@/lib/backend";
 import { AttendeeLayout } from "@/components/AttendeeLayout";
 import { 
   Camera, Edit2, Mail, Phone, MapPin, Calendar, Save, LogOut, Github, Linkedin, Twitter
@@ -12,16 +13,15 @@ import { Badge } from "@/components/ui/badge";
 
 export default function AttendeeProfile() {
   const [isEditing, setIsEditing] = useState(false);
-  const [profile, setProfile] = useState({
-    name: "John Doe",
-    bio: "Tech enthusiast, software engineer, and regular attendee at AI conferences. Always looking for the next big thing in innovation.",
-    email: "john.doe@example.com",
-    phone: "+91 98765 43210",
-    city: "Bengaluru, India",
-    memberSince: "January 2026"
-  });
+  const { data: profile, isLoading: profileLoading } = useFetch<any>("/api/users/me");
+  const [localProfile, setLocalProfile] = useState<any>(null);
+
+  useEffect(() => {
+    if (profile) setLocalProfile(profile);
+  }, [profile]);
 
   const handleSave = () => {
+    // Would call API to save localProfile, then re-fetch
     setIsEditing(false);
   };
 
@@ -44,17 +44,17 @@ export default function AttendeeProfile() {
               <div className="flex flex-col md:flex-row items-center md:items-end gap-6">
                 <div className="relative group">
                   <Avatar className="h-32 w-32 border-4 border-background shadow-xl">
-                    <AvatarImage src="https://api.dicebear.com/7.x/avataaars/svg?seed=John" />
-                    <AvatarFallback>JD</AvatarFallback>
+                    {/* Avatar image could be served by backend; fallback to initials */}
+                    <AvatarFallback>{(profile?.name || localProfile?.name || 'A').split(' ').map((n:any)=>n[0]).slice(0,2).join('') ?? 'A'}</AvatarFallback>
                   </Avatar>
                   <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
                     <Camera className="w-8 h-8 text-white" />
                   </div>
                 </div>
                 <div className="text-center md:text-left pb-2">
-                  <h1 className="text-3xl font-bold">{profile.name}</h1>
+                  <h1 className="text-3xl font-bold">{profileLoading ? 'Loading…' : (profile?.name ?? localProfile?.name ?? 'Attendee')}</h1>
                   <p className="text-muted-foreground flex items-center justify-center md:justify-start gap-2 mt-1">
-                    <MapPin className="w-4 h-4" /> {profile.city}
+                    <MapPin className="w-4 h-4" /> {profile?.city ?? localProfile?.city ?? ''}
                   </p>
                 </div>
               </div>
@@ -84,12 +84,12 @@ export default function AttendeeProfile() {
                 {isEditing ? (
                   <textarea 
                     className="w-full min-h-[120px] bg-muted/50 border-none rounded-xl p-3 focus:ring-1 focus:ring-primary outline-none text-sm"
-                    value={profile.bio}
-                    onChange={(e) => setProfile({...profile, bio: e.target.value})}
+                    value={localProfile?.bio ?? ''}
+                    onChange={(e) => setLocalProfile({...localProfile, bio: e.target.value})}
                   />
                 ) : (
                   <p className="text-sm text-muted-foreground leading-relaxed">
-                    {profile.bio}
+                    {profile?.bio ?? localProfile?.bio ?? ''}
                   </p>
                 )}
                 <div className="flex gap-4 pt-2">
@@ -110,7 +110,7 @@ export default function AttendeeProfile() {
               <CardContent className="pt-6 space-y-4">
                 <div className="flex items-center gap-3 text-sm text-muted-foreground">
                   <Calendar className="w-4 h-4" />
-                  <span>Member since {profile.memberSince}</span>
+                  <span>Member since {profile?.memberSince ?? localProfile?.memberSince ?? '—'}</span>
                 </div>
                 <div className="pt-4 space-y-2">
                   <h4 className="text-sm font-semibold">Interests</h4>
@@ -138,8 +138,8 @@ export default function AttendeeProfile() {
                     <div className="relative">
                       <Input 
                         disabled={!isEditing}
-                        value={profile.name}
-                        onChange={(e) => setProfile({...profile, name: e.target.value})}
+                        value={localProfile?.name ?? profile?.name ?? ''}
+                        onChange={(e) => setLocalProfile({...localProfile, name: e.target.value})}
                         className="bg-muted/30 border-none h-11"
                       />
                     </div>
@@ -150,8 +150,8 @@ export default function AttendeeProfile() {
                       <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                       <Input 
                         disabled={!isEditing}
-                        value={profile.email}
-                        onChange={(e) => setProfile({...profile, email: e.target.value})}
+                        value={localProfile?.email ?? profile?.email ?? ''}
+                        onChange={(e) => setLocalProfile({...localProfile, email: e.target.value})}
                         className="pl-10 bg-muted/30 border-none h-11"
                       />
                     </div>
@@ -162,8 +162,8 @@ export default function AttendeeProfile() {
                       <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                       <Input 
                         disabled={!isEditing}
-                        value={profile.phone}
-                        onChange={(e) => setProfile({...profile, phone: e.target.value})}
+                        value={localProfile?.phone ?? profile?.phone ?? ''}
+                        onChange={(e) => setLocalProfile({...localProfile, phone: e.target.value})}
                         className="pl-10 bg-muted/30 border-none h-11"
                       />
                     </div>
@@ -174,8 +174,8 @@ export default function AttendeeProfile() {
                       <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                       <Input 
                         disabled={!isEditing}
-                        value={profile.city}
-                        onChange={(e) => setProfile({...profile, city: e.target.value})}
+                        value={localProfile?.city ?? profile?.city ?? ''}
+                        onChange={(e) => setLocalProfile({...localProfile, city: e.target.value})}
                         className="pl-10 bg-muted/30 border-none h-11"
                       />
                     </div>

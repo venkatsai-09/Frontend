@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useFetch } from "@/lib/backend";
 import { 
   Camera, Pencil, Save, Mail, Phone, MapPin, 
   Globe, Linkedin, Twitter, LogOut, Check
@@ -15,21 +16,13 @@ import { useLocation } from "wouter";
 export default function OrganizerProfile() {
   const [, setLocation] = useLocation();
   const [isEditing, setIsEditing] = useState(false);
-  const [profile, setProfile] = useState({
-    name: "Rahul Mehta",
-    organization: "TechEvents India",
-    role: "Senior Event Strategist",
-    bio: "Passionate about creating unforgettable tech experiences. Specialized in large-scale conferences and developer meetups with over 10 years of experience in the industry.",
-    email: "rahul.mehta@techevents.in",
-    phone: "+91 98765 43210",
-    location: "Mumbai, Maharashtra",
-    website: "www.techevents.in",
-    memberSince: "January 2022"
-  });
+  const { data: profile, isLoading: profileLoading } = useFetch<any>("/api/users/me");
+  // minimal local editable copy only when editing
+  const [localProfile, setLocalProfile] = useState<any>(null);
 
   const handleSave = () => {
     setIsEditing(false);
-    // In a real app, save to API
+    // In a real app, save to API and refresh
   };
 
   const handleLogout = () => {
@@ -51,7 +44,7 @@ export default function OrganizerProfile() {
             <div className="flex flex-col md:flex-row items-end gap-6 -mt-16 mb-6">
               <div className="relative group">
                 <Avatar className="w-32 h-32 border-4 border-background ring-4 ring-primary/20">
-                  <AvatarFallback className="bg-primary/20 text-primary text-3xl font-bold">RM</AvatarFallback>
+                  <AvatarFallback className="bg-primary/20 text-primary text-3xl font-bold">{(profile?.name || 'O').split(' ').map((n:any)=>n[0]).slice(0,2).join('') ?? 'O'}</AvatarFallback>
                 </Avatar>
                 <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
                   <Camera className="w-6 h-6 text-white" />
@@ -60,10 +53,10 @@ export default function OrganizerProfile() {
               
               <div className="flex-1 pb-2">
                 <div className="flex flex-wrap items-center gap-3 mb-1">
-                  <h1 className="text-3xl font-bold">{profile.name}</h1>
+                  <h1 className="text-3xl font-bold">{profileLoading ? 'Loading…' : (profile?.name ?? 'Organizer')}</h1>
                   <Badge className="bg-primary/20 text-primary border-primary/50">Pro Organizer</Badge>
                 </div>
-                <p className="text-muted-foreground font-medium">{profile.organization} • {profile.role}</p>
+                <p className="text-muted-foreground font-medium">{profile?.organization ?? ''} {profile?.role ? `• ${profile.role}` : ''}</p>
               </div>
 
               <div className="flex gap-3 pb-2">
@@ -83,23 +76,23 @@ export default function OrganizerProfile() {
               {/* Left Column - Info */}
               <div className="md:col-span-1 space-y-6">
                 <div>
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">Contact Info</h3>
+                      <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">Contact Info</h3>
                   <div className="space-y-4">
                     <div className="flex items-center gap-3 text-sm">
                       <Mail className="w-4 h-4 text-primary" />
-                      {isEditing ? <Input value={profile.email} size={1} className="h-8 bg-white/5" /> : <span>{profile.email}</span>}
+                      {isEditing ? <Input value={localProfile?.email ?? profile?.email ?? ''} size={1} className="h-8 bg-white/5" onChange={(e)=>setLocalProfile({...localProfile, email: e.target.value})} /> : <span>{profile?.email ?? ''}</span>}
                     </div>
                     <div className="flex items-center gap-3 text-sm">
                       <Phone className="w-4 h-4 text-primary" />
-                      {isEditing ? <Input value={profile.phone} size={1} className="h-8 bg-white/5" /> : <span>{profile.phone}</span>}
+                      {isEditing ? <Input value={localProfile?.phone ?? profile?.phone ?? ''} size={1} className="h-8 bg-white/5" onChange={(e)=>setLocalProfile({...localProfile, phone: e.target.value})} /> : <span>{profile?.phone ?? ''}</span>}
                     </div>
                     <div className="flex items-center gap-3 text-sm">
                       <MapPin className="w-4 h-4 text-primary" />
-                      {isEditing ? <Input value={profile.location} size={1} className="h-8 bg-white/5" /> : <span>{profile.location}</span>}
+                      {isEditing ? <Input value={localProfile?.location ?? profile?.location ?? ''} size={1} className="h-8 bg-white/5" onChange={(e)=>setLocalProfile({...localProfile, location: e.target.value})} /> : <span>{profile?.location ?? ''}</span>}
                     </div>
                     <div className="flex items-center gap-3 text-sm">
                       <Globe className="w-4 h-4 text-primary" />
-                      {isEditing ? <Input value={profile.website} size={1} className="h-8 bg-white/5" /> : <span>{profile.website}</span>}
+                      {isEditing ? <Input value={localProfile?.website ?? profile?.website ?? ''} size={1} className="h-8 bg-white/5" onChange={(e)=>setLocalProfile({...localProfile, website: e.target.value})} /> : <span>{profile?.website ?? ''}</span>}
                     </div>
                   </div>
                 </div>
@@ -117,7 +110,7 @@ export default function OrganizerProfile() {
                 </div>
 
                 <div className="pt-6 border-t border-white/10">
-                  <p className="text-xs text-muted-foreground">Member since {profile.memberSince}</p>
+                  <p className="text-xs text-muted-foreground">Member since {profile?.memberSince ?? '—'}</p>
                   <Button 
                     onClick={handleLogout}
                     variant="ghost" 
@@ -134,13 +127,13 @@ export default function OrganizerProfile() {
                   <h3 className="text-lg font-bold mb-4">About Me</h3>
                   {isEditing ? (
                     <Textarea 
-                      value={profile.bio} 
-                      onChange={(e) => setProfile({...profile, bio: e.target.value})}
+                      value={localProfile?.bio ?? profile?.bio ?? ''} 
+                      onChange={(e) => setLocalProfile({...localProfile, bio: e.target.value})}
                       className="min-h-[150px] bg-white/5 border-white/10"
                     />
                   ) : (
                     <p className="text-muted-foreground leading-relaxed">
-                      {profile.bio}
+                      {profile?.bio ?? ''}
                     </p>
                   )}
                 </div>

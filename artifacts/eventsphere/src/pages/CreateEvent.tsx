@@ -139,12 +139,14 @@ export default function CreateEvent() {
   };
 
   const handleInsertIntoForm = () => {
-    form.setValue("description", "Join us for the most anticipated technology event of the year — AI Summit 2026! This groundbreaking conference brings together the brightest minds in artificial intelligence, machine learning, and data science. From immersive workshops to high-impact keynotes, this is where innovation meets opportunity. Whether you're a seasoned professional or just beginning your AI journey, you'll leave with actionable insights and powerful connections.");
-    setActiveTab("details");
-    toast({
-      title: "Content Inserted",
-      description: "AI description added to event form."
-    });
+    // Insert generated content if available. Avoid inserting demo/canned text.
+    const generated = form.getValues().description || '';
+    if (generated) {
+      form.setValue("description", generated);
+      toast({ title: "Content Inserted", description: "AI description added to event form." });
+    } else {
+      toast({ title: "No content", description: "No generated content available to insert." });
+    }
   };
 
   return (
@@ -192,7 +194,7 @@ export default function CreateEvent() {
             </Button>
 
             <Avatar className="h-8 w-8 sm:hidden shrink-0">
-              <AvatarFallback className="bg-primary/20 text-primary">RM</AvatarFallback>
+              <AvatarFallback className="bg-primary/20 text-primary">O</AvatarFallback>
             </Avatar>
           </div>
         </header>
@@ -773,7 +775,7 @@ export default function CreateEvent() {
                       <div className="space-y-2">
                         <FormLabel>Speaker Names</FormLabel>
                         <Input 
-                          placeholder="e.g. Rahul Mehta, Dr. Priya Sharma"
+                          placeholder="e.g. Speaker Name, Dr. Name"
                           value={aiForm.speakers} 
                           onChange={(e) => setAiForm({...aiForm, speakers: e.target.value})}
                           className="bg-white/5 border-white/10" 
@@ -836,43 +838,10 @@ export default function CreateEvent() {
 
                     {generatedContent && !isGenerating && (
                       <div className="flex-1 flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                        
                         <div className="p-5 rounded-xl bg-white/5 border border-white/10 border-l-4 border-l-purple-500 relative overflow-hidden group">
-                          <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 rounded-bl-full -z-10 group-hover:scale-110 transition-transform"></div>
-                          <h3 className="font-semibold text-purple-400 mb-2">AI Generated Description</h3>
-                          <p className="text-sm text-muted-foreground leading-relaxed">
-                            Join us for the most anticipated technology event of the year — AI Summit 2026! This groundbreaking conference brings together the brightest minds in artificial intelligence, machine learning, and data science. From immersive workshops to high-impact keynotes, this is where innovation meets opportunity. Whether you're a seasoned professional or just beginning your AI journey, you'll leave with actionable insights and powerful connections.
-                          </p>
+                          <h3 className="font-semibold text-purple-400 mb-2">AI Generated Content</h3>
+                          <p className="text-sm text-muted-foreground leading-relaxed">Generated content is available — review and insert into the form as needed.</p>
                         </div>
-
-                        <div className="p-5 rounded-xl bg-white/5 border border-white/10 border-l-4 border-l-blue-500 relative overflow-hidden group">
-                          <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-bl-full -z-10 group-hover:scale-110 transition-transform"></div>
-                          <h3 className="font-semibold text-blue-400 mb-2">Marketing Summary</h3>
-                          <p className="text-sm text-muted-foreground leading-relaxed">
-                            AI Summit 2026 — Where Visionaries Meet. 2,500 attendees. 10+ speakers. 1 unforgettable experience. Join India's premier AI event on 15/08/2026 in Bengaluru.
-                          </p>
-                        </div>
-
-                        <div className="p-5 rounded-xl bg-white/5 border border-white/10 border-l-4 border-l-green-500 relative overflow-hidden group">
-                          <div className="absolute top-0 right-0 w-32 h-32 bg-green-500/10 rounded-bl-full -z-10 group-hover:scale-110 transition-transform"></div>
-                          <h3 className="font-semibold text-green-400 mb-2">SEO Summary</h3>
-                          <p className="text-sm text-muted-foreground leading-relaxed">
-                            AI Summit 2026 is India's largest artificial intelligence conference, featuring top AI experts, live demos, and networking opportunities. Register now for the ultimate AI event in Bengaluru.
-                          </p>
-                        </div>
-
-                        <div className="p-5 rounded-xl bg-white/5 border border-white/10 border-l-4 border-l-orange-500 relative overflow-hidden group">
-                          <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/10 rounded-bl-full -z-10 group-hover:scale-110 transition-transform"></div>
-                          <h3 className="font-semibold text-orange-400 mb-2">Key Highlights</h3>
-                          <ul className="text-sm text-muted-foreground leading-relaxed list-disc pl-4 space-y-1">
-                            <li>10+ world-class speakers from Google, Razorpay & Infosys</li>
-                            <li>Hands-on ML workshops with TensorFlow</li>
-                            <li>Exclusive networking dinner for VIP attendees</li>
-                            <li>Live product demos from 20+ AI startups</li>
-                            <li>Certificate of participation for all attendees</li>
-                          </ul>
-                        </div>
-
                         <div className="flex flex-wrap items-center gap-3 pt-4">
                           <Button variant="outline" className="border-white/20" onClick={handleGenerate} data-testid="button-regenerate">
                             <RefreshCw className="w-4 h-4 mr-2" /> Regenerate
@@ -890,7 +859,6 @@ export default function CreateEvent() {
                             <ArrowLeft className="w-4 h-4 mr-2" /> Insert into Form
                           </Button>
                         </div>
-
                       </div>
                     )}
                     

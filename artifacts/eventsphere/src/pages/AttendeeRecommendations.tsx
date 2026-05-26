@@ -8,23 +8,21 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Empty } from "@/components/ui/empty";
-
-const RECOMMENDATIONS = [
-  { id: 1, title: "AI Summit 2026", category: "AI", date: "15/08/2026", location: "Bengaluru", price: 2499, rating: 4.8, gradient: "from-blue-600 to-violet-600" },
-  { id: 7, title: "Data Science Summit", category: "Technology", date: "02/10/2026", location: "Bengaluru", price: 2499, rating: 4.8, gradient: "from-fuchsia-500 to-cyan-600" },
-  { id: 10, title: "AI & Machine Learning Con", category: "AI", date: "20/10/2026", location: "Hyderabad", price: 3499, rating: 4.9, gradient: "from-violet-500 to-fuchsia-700" },
-];
+import { useFetch } from "@/lib/backend";
 
 export default function AttendeeRecommendations() {
   const [isLoading, setIsLoading] = useState(false);
   const [showRecommendations, setShowRecommendations] = useState(false);
+  const { data: recommendations, isLoading: fetching, refresh } = useFetch<Array<any>>(showRecommendations ? "/api/recommendations" : null);
 
   const loadRecommendations = () => {
     setIsLoading(true);
+    setShowRecommendations(true);
+    // trigger fetch
+    refresh();
     setTimeout(() => {
       setIsLoading(false);
-      setShowRecommendations(true);
-    }, 1500);
+    }, 800);
   };
 
   return (
@@ -57,41 +55,47 @@ export default function AttendeeRecommendations() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {RECOMMENDATIONS.map(event => (
-              <Link key={event.id} href={`/events/${event.id}`}>
-                <Card className="glass-panel overflow-hidden flex flex-col group border-white/5 hover:border-primary/50 transition-all duration-300 cursor-pointer">
-                  <div className={`h-40 bg-gradient-to-br ${event.gradient} relative`}>
-                    <Badge className="absolute top-4 left-4 bg-background/50 backdrop-blur-md text-foreground border-none">
-                      {event.category}
-                    </Badge>
-                  </div>
-                  
-                  <CardContent className="pt-6 flex-1">
-                    <h3 className="text-xl font-semibold mb-2 text-foreground group-hover:text-primary transition-colors line-clamp-1">{event.title}</h3>
-                    <div className="space-y-2 text-sm text-muted-foreground">
-                      <div className="flex items-center">
-                        <Calendar className="w-4 h-4 mr-2 text-primary/70" /> {event.date}
-                      </div>
-                      <div className="flex items-center">
-                        <MapPin className="w-4 h-4 mr-2 text-primary/70" /> {event.location}
-                      </div>
-                      <div className="flex items-center">
-                        <Star className="w-4 h-4 mr-2 text-yellow-500" /> {event.rating}/5
-                      </div>
+            {fetching ? (
+              <div className="col-span-full text-center py-12 text-muted-foreground">Loading recommendations…</div>
+            ) : (!recommendations || recommendations.length === 0) ? (
+              <div className="col-span-full text-center py-12 text-muted-foreground">No recommendations available yet</div>
+            ) : (
+              recommendations.map((event: any) => (
+                <Link key={event.id} href={`/events/${event.id}`}>
+                  <Card className="glass-panel overflow-hidden flex flex-col group border-white/5 hover:border-primary/50 transition-all duration-300 cursor-pointer">
+                    <div className={`h-40 bg-gradient-to-br ${event.gradient || ''} relative`}>
+                      <Badge className="absolute top-4 left-4 bg-background/50 backdrop-blur-md text-foreground border-none">
+                        {event.category}
+                      </Badge>
                     </div>
-                  </CardContent>
+                    
+                    <CardContent className="pt-6 flex-1">
+                      <h3 className="text-xl font-semibold mb-2 text-foreground group-hover:text-primary transition-colors line-clamp-1">{event.title || event.name}</h3>
+                      <div className="space-y-2 text-sm text-muted-foreground">
+                        <div className="flex items-center">
+                          <Calendar className="w-4 h-4 mr-2 text-primary/70" /> {event.date}
+                        </div>
+                        <div className="flex items-center">
+                          <MapPin className="w-4 h-4 mr-2 text-primary/70" /> {event.location}
+                        </div>
+                        <div className="flex items-center">
+                          <Star className="w-4 h-4 mr-2 text-yellow-500" /> {event.rating}/5
+                        </div>
+                      </div>
+                    </CardContent>
 
-                  <CardFooter className="pt-4 border-t border-white/10 flex justify-between items-center">
-                    <span className="font-semibold text-lg text-foreground">
-                      ₹{event.price}
-                    </span>
-                    <Button size="sm" className="bg-primary hover:bg-primary/90">
-                      Register
-                    </Button>
-                  </CardFooter>
-                </Card>
-              </Link>
-            ))}
+                    <CardFooter className="pt-4 border-t border-white/10 flex justify-between items-center">
+                      <span className="font-semibold text-lg text-foreground">
+                        ₹{event.price}
+                      </span>
+                      <Button size="sm" className="bg-primary hover:bg-primary/90">
+                        Register
+                      </Button>
+                    </CardFooter>
+                  </Card>
+                </Link>
+              ))
+            )}
           </div>
         )}
       </div>

@@ -3,6 +3,7 @@ import { Camera, QrCode, CheckCircle2, User, Ticket } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { OrganizerLayout } from "@/components/layout/OrganizerLayout";
+import { useFetch } from "@/lib/backend";
 import { 
   Dialog, 
   DialogContent, 
@@ -21,6 +22,7 @@ export default function Scanner() {
     // Simulate a successful scan after 2 seconds
     setTimeout(() => {
       setIsScanning(false);
+      // In a real app the scan would return an id or payload; here we toggle the dialog
       setShowSuccess(true);
     }, 2000);
   };
@@ -98,7 +100,9 @@ export default function Scanner() {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground font-medium">Attendee Name</p>
-                  <p className="font-bold">Rahul Mehta</p>
+                  <p className="font-bold">{ /* Replace with scanned result when available */ }
+                    {showSuccess ? (/* we could fetch the last scan result from API */ 'Attendee') : '—'}
+                  </p>
                 </div>
               </div>
               
@@ -108,7 +112,7 @@ export default function Scanner() {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground font-medium">Ticket Type</p>
-                  <p className="font-bold">VIP Early Access</p>
+                  <p className="font-bold">{showSuccess ? 'General Admission' : '—'}</p>
                 </div>
               </div>
             </div>

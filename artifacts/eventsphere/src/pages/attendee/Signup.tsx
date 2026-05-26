@@ -31,7 +31,7 @@ export default function AttendeeSignup() {
               <Label htmlFor="fullname">Full Name</Label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input id="fullname" placeholder="John Doe" className="pl-10" />
+                <Input id="fullname" placeholder="Your full name" className="pl-10" />
               </div>
             </div>
             <div className="space-y-2">

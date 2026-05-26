@@ -1,23 +1,16 @@
 import { Link, useLocation } from "wouter";
-import { 
-  LayoutDashboard, PlusCircle, CalendarDays, Users, BarChart3, 
-  Sparkles, CreditCard, Settings, Search
-} from "lucide-react";
+import { LayoutDashboard, PlusCircle, Search, Settings, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { useFetch } from "@/lib/backend";
 
 const NAV_ITEMS = [
   { name: "Dashboard", icon: LayoutDashboard, href: "/organizer" },
-  { name: "Scanner", icon: Search, href: "/organizer/scanner" },
   { name: "Create Event", icon: PlusCircle, href: "/organizer/create-event" },
-  { name: "Manage Events", icon: CalendarDays, href: "/organizer/manage" },
-  { name: "History", icon: CalendarDays, href: "/organizer/history" },
-  { name: "Attendees", icon: Users, href: "/organizer/attendees" },
-  { name: "Analytics", icon: BarChart3, href: "/organizer/analytics" },
+  { name: "Scanner", icon: Search, href: "/organizer/scanner" },
+  { name: "History", icon: Users, href: "/organizer/history" },
   { name: "Profile", icon: Users, href: "/organizer/profile" },
-  { name: "AI Tools", icon: Sparkles, href: "/organizer/ai-tools" },
-  { name: "Payments", icon: CreditCard, href: "/organizer/payments" },
 ];
 
 export function OrganizerSidebar() {
@@ -63,19 +56,36 @@ export function OrganizerSidebar() {
       </nav>
 
       <div className="p-4 mt-auto border-t border-white/10">
-        <div className="flex items-center gap-3 px-2 py-3 rounded-xl bg-white/5 backdrop-blur-md border border-white/10">
-          <Avatar className="h-10 w-10 border border-primary/50">
-            <AvatarFallback className="bg-primary/20 text-primary">RM</AvatarFallback>
-          </Avatar>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-foreground truncate">Rahul Mehta</p>
-            <p className="text-xs text-primary/80 truncate">Pro Organizer</p>
-          </div>
-          <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
-            <Settings className="w-5 h-5" />
-          </Button>
-        </div>
+        <OrganizerProfile />
       </div>
+    </div>
+  );
+}
+
+function OrganizerProfile() {
+  const { data } = useFetch<{ name?: string; role?: string; id?: string }>("/api/users/me");
+  const name = data?.name?.trim() || "Organizer";
+  const role = data?.role?.trim() || "Organizer";
+  const initials = name
+    .split(" ")
+    .map((p) => p[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+  const seed = data?.id || name.replace(/\s+/g, "_");
+
+  return (
+    <div className="flex items-center gap-3 px-2 py-3 rounded-xl bg-white/5 backdrop-blur-md border border-white/10">
+      <Avatar className="h-10 w-10 border border-primary/50">
+        <AvatarFallback className="bg-primary/20 text-primary">{initials}</AvatarFallback>
+      </Avatar>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-foreground truncate">{name}</p>
+        <p className="text-xs text-primary/80 truncate">{role}</p>
+      </div>
+      <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
+        <Settings className="w-5 h-5" />
+      </Button>
     </div>
   );
 }

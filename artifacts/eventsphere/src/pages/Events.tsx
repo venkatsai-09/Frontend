@@ -16,20 +16,7 @@ import { Label } from "@/components/ui/label";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Slider } from "@/components/ui/slider";
 
-const MOCK_EVENTS = [
-  { id: 1, title: "AI Summit 2026", category: "AI", date: "15/08/2026", location: "Bengaluru", price: 2499, rating: 4.8, gradient: "from-blue-600 to-violet-600" },
-  { id: 2, title: "Startup Connect India", category: "Business", date: "22/08/2026", location: "Mumbai", price: 1499, rating: 4.6, gradient: "from-orange-500 to-pink-500" },
-  { id: 3, title: "Future of Robotics", category: "Technology", date: "05/09/2026", location: "Delhi", price: 3999, rating: 4.9, gradient: "from-emerald-500 to-teal-700" },
-  { id: 4, title: "Business Leaders Meet", category: "Business", date: "12/09/2026", location: "Pune", price: 2999, rating: 4.5, gradient: "from-indigo-500 to-purple-700" },
-  { id: 5, title: "Tech Innovators Conference", category: "Technology", date: "18/09/2026", location: "Hyderabad", price: 1999, rating: 4.7, gradient: "from-cyan-500 to-blue-600" },
-  { id: 6, title: "IndieMusic Fest 2026", category: "Music", date: "25/09/2026", location: "Chennai", price: 799, rating: 4.4, gradient: "from-rose-500 to-red-700" },
-  { id: 7, title: "Data Science Summit", category: "Technology", date: "02/10/2026", location: "Bengaluru", price: 2499, rating: 4.8, gradient: "from-fuchsia-500 to-cyan-600" },
-  { id: 8, title: "National Education Expo", category: "Education", date: "08/10/2026", location: "Delhi", price: 0, rating: 4.3, gradient: "from-amber-400 to-orange-600" },
-  { id: 9, title: "Sports Tech India", category: "Sports", date: "14/10/2026", location: "Mumbai", price: 999, rating: 4.5, gradient: "from-lime-500 to-green-700" },
-  { id: 10, title: "AI & Machine Learning Con", category: "AI", date: "20/10/2026", location: "Hyderabad", price: 3499, rating: 4.9, gradient: "from-violet-500 to-fuchsia-700" },
-  { id: 11, title: "Entrepreneurs Networking", category: "Networking", date: "26/10/2026", location: "Pune", price: 599, rating: 4.6, gradient: "from-pink-500 to-rose-600" },
-  { id: 12, title: "Cloud Computing Summit", category: "Technology", date: "01/11/2026", location: "Chennai", price: 1799, rating: 4.7, gradient: "from-blue-500 to-indigo-700" },
-];
+import { useFetch } from "@/lib/backend";
 
 const CATEGORIES = ["All", "AI", "Technology", "Business", "Music", "Sports", "Education", "Networking"];
 const CITIES = ["All Cities", "Bengaluru", "Mumbai", "Delhi", "Pune", "Hyderabad", "Chennai", "Kolkata"];
@@ -38,6 +25,7 @@ export default function Events() {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [priceRange, setPriceRange] = useState([10000]);
   const [savedEvents, setSavedEvents] = useState<number[]>([]);
+  const { data: events, isLoading } = useFetch<Array<any>>("/api/events");
 
   const toggleSave = (id: number) => {
     setSavedEvents(prev => prev.includes(id) ? prev.filter(eId => eId !== id) : [...prev, id]);
@@ -181,7 +169,15 @@ export default function Events() {
         {/* Main Content */}
         <main className="flex-1">
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {MOCK_EVENTS.map(event => (
+            {isLoading && (
+              <div className="col-span-full text-center py-20 text-muted-foreground">Loading events…</div>
+            )}
+
+            {!isLoading && (!events || events.length === 0) && (
+              <div className="col-span-full text-center py-20 text-muted-foreground">No events available</div>
+            )}
+
+            {!isLoading && events && events.length > 0 && events.map(event => (
               <Card key={event.id} className="glass-panel overflow-hidden flex flex-col group border-white/5 hover:border-primary/50 transition-all duration-300">
                 <div className={`h-40 bg-gradient-to-br ${event.gradient} relative`}>
                   <Badge className="absolute top-4 left-4 bg-background/50 backdrop-blur-md text-foreground border-none">
@@ -198,7 +194,7 @@ export default function Events() {
                 </div>
                 
                 <CardContent className="pt-6 flex-1">
-                  <h3 className="text-xl font-semibold mb-2 text-foreground group-hover:text-primary transition-colors line-clamp-1">{event.title}</h3>
+                    <h3 className="text-xl font-semibold mb-2 text-foreground group-hover:text-primary transition-colors line-clamp-1">{event.title || event.name}</h3>
                   <div className="space-y-2 text-sm text-muted-foreground">
                     <div className="flex items-center">
                       <Calendar className="w-4 h-4 mr-2 text-primary/70" /> {event.date}

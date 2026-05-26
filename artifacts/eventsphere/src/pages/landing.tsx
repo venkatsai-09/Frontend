@@ -8,24 +8,14 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Calendar, MapPin, Ticket } from "lucide-react";
 import { Link } from "wouter";
 
-const mockEvents = [
-  { id: 1, name: "TechSummit India 2026", category: "Technology", date: "15/08/2026", location: "Bengaluru", price: 2499, gradient: "from-blue-600 to-indigo-900" },
-  { id: 2, name: "AI & Future Conference", category: "AI", date: "22/08/2026", location: "Mumbai", price: 3999, gradient: "from-purple-600 to-fuchsia-900" },
-  { id: 3, name: "Startup Connect India", category: "Business", date: "05/09/2026", location: "Delhi", price: 1499, gradient: "from-emerald-600 to-teal-900" },
-  { id: 4, name: "IndieMusic Fest 2026", category: "Music", date: "12/09/2026", location: "Pune", price: 799, gradient: "from-rose-600 to-pink-900" },
-  { id: 5, name: "Data Science Summit", category: "Technology", date: "18/09/2026", location: "Hyderabad", price: 2999, gradient: "from-cyan-600 to-blue-900" },
-  { id: 6, name: "National Education Expo", category: "Education", date: "25/09/2026", location: "Chennai", price: 0, gradient: "from-amber-500 to-orange-800" },
-];
+import { useFetch } from "@/lib/backend";
 
 const categories = ["AI", "Technology", "Business", "Music", "Sports", "Education", "Networking"];
 
-const testimonials = [
-  { name: "Rahul Sharma", role: "Event Organizer", quote: "EventSphere completely transformed how we manage registrations. The AI insights helped us target the right audience.", initials: "RS" },
-  { name: "Priya Patel", role: "Tech Enthusiast", quote: "Finding relevant AI conferences in Mumbai has never been this easy. The recommendations are spot on.", initials: "PP" },
-  { name: "Arjun Desai", role: "Startup Founder", quote: "We ran our entire product launch event through EventSphere. Flawless execution from ticketing to analytics.", initials: "AD" },
-];
+const testimonials: any[] | undefined = undefined; // replaced by backend when available
 
 export default function Landing() {
+  const { data: featuredEvents, isLoading: loadingFeatured } = useFetch<any[]>('/api/events/featured');
   return (
     <div className="min-h-screen bg-background relative overflow-hidden flex flex-col">
       <div className="absolute top-0 inset-x-0 h-[800px] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/20 via-background to-background pointer-events-none" />
@@ -136,17 +126,10 @@ export default function Landing() {
         <section className="border-y border-white/10 bg-white/5 backdrop-blur-sm py-12">
           <div className="container mx-auto px-4">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-              {[
-                { label: "Attendees", value: "50,000+" },
-                { label: "Events", value: "5,000+" },
-                { label: "Organizers", value: "1,000+" },
-                { label: "Satisfaction", value: "98%" }
-              ].map((stat, i) => (
-                <div key={i} className="space-y-2">
-                  <div className="text-3xl md:text-4xl font-bold text-white bg-clip-text text-transparent bg-gradient-to-b from-white to-white/50">{stat.value}</div>
-                  <div className="text-sm font-medium text-primary uppercase tracking-wider">{stat.label}</div>
-                </div>
-              ))}
+              <div className="space-y-2">
+                <div className="text-3xl md:text-4xl font-bold text-white bg-clip-text text-transparent bg-gradient-to-b from-white to-white/50">Trusted by organizers and attendees</div>
+                <div className="text-sm font-medium text-primary uppercase tracking-wider">Join the community</div>
+              </div>
             </div>
           </div>
         </section>
@@ -174,43 +157,51 @@ export default function Landing() {
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {mockEvents.map((event, i) => (
-                <motion.div
-                  key={event.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.1 }}
-                >
-                  <Card className="glass-panel overflow-hidden border-white/10 hover:border-primary/50 transition-colors group">
-                    <div className={`h-40 w-full bg-gradient-to-br ${event.gradient} opacity-80 group-hover:opacity-100 transition-opacity`} />
-                    <CardContent className="p-6">
-                      <div className="flex justify-between items-start mb-4">
-                        <Badge className="bg-primary/20 text-primary border-primary/30 hover:bg-primary/30">
-                          {event.category}
-                        </Badge>
-                        <div className="text-xl font-bold text-white">
-                          {event.price === 0 ? "Free" : `₹${event.price.toLocaleString('en-IN')}`}
+              {loadingFeatured ? (
+                Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="h-40 rounded-lg bg-white/5 animate-pulse" />
+                ))
+              ) : featuredEvents && featuredEvents.length > 0 ? (
+                featuredEvents.map((event: any, i: number) => (
+                  <motion.div
+                    key={event.id ?? i}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: i * 0.1 }}
+                  >
+                    <Card className="glass-panel overflow-hidden border-white/10 hover:border-primary/50 transition-colors group">
+                      <div className={`h-40 w-full bg-gradient-to-br ${event.gradient ?? 'from-primary to-accent'} opacity-80 group-hover:opacity-100 transition-opacity`} />
+                      <CardContent className="p-6">
+                        <div className="flex justify-between items-start mb-4">
+                          <Badge className="bg-primary/20 text-primary border-primary/30 hover:bg-primary/30">
+                            {event.category}
+                          </Badge>
+                          <div className="text-xl font-bold text-white">
+                            {event.price === 0 ? "Free" : `₹${Number(event.price).toLocaleString('en-IN')}`}
+                          </div>
                         </div>
-                      </div>
-                      <h3 className="text-xl font-semibold text-white mb-4 line-clamp-1">{event.name}</h3>
-                      <div className="space-y-2 mb-6">
-                        <div className="flex items-center text-muted-foreground text-sm gap-2">
-                          <Calendar className="w-4 h-4 text-primary" />
-                          <span>{event.date}</span>
+                        <h3 className="text-xl font-semibold text-white mb-4 line-clamp-1">{event.name}</h3>
+                        <div className="space-y-2 mb-6">
+                          <div className="flex items-center text-muted-foreground text-sm gap-2">
+                            <Calendar className="w-4 h-4 text-primary" />
+                            <span>{event.date}</span>
+                          </div>
+                          <div className="flex items-center text-muted-foreground text-sm gap-2">
+                            <MapPin className="w-4 h-4 text-primary" />
+                            <span>{event.location}</span>
+                          </div>
                         </div>
-                        <div className="flex items-center text-muted-foreground text-sm gap-2">
-                          <MapPin className="w-4 h-4 text-primary" />
-                          <span>{event.location}</span>
-                        </div>
-                      </div>
-                      <Button className="w-full bg-white/10 text-white hover:bg-primary hover:text-white border-none" data-testid={`button-book-${event.id}`}>
-                        Book Now
-                      </Button>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              ))}
+                        <Button className="w-full bg-white/10 text-white hover:bg-primary hover:text-white border-none" data-testid={`button-book-${event.id}`}>
+                          Book Now
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                ))
+              ) : (
+                <div className="col-span-full text-center text-muted-foreground">No featured events available.</div>
+              )}
             </div>
           </div>
         </section>
@@ -221,27 +212,31 @@ export default function Landing() {
             <h2 className="text-3xl font-bold text-white mb-4">What Our Users Say</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {testimonials.map((t, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, scale: 0.95 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                className="glass-panel p-8 rounded-2xl border-white/10 flex flex-col gap-6"
-              >
-                <div className="text-muted-foreground flex-1 italic text-lg leading-relaxed">"{t.quote}"</div>
-                <div className="flex items-center gap-4">
-                  <Avatar>
-                    <AvatarFallback className="bg-primary/20 text-primary">{t.initials}</AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <div className="font-semibold text-white">{t.name}</div>
-                    <div className="text-sm text-muted-foreground">{t.role}</div>
+            {Array.isArray(testimonials) && testimonials.length > 0 ? (
+              testimonials.map((t, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.1 }}
+                  className="glass-panel p-8 rounded-2xl border-white/10 flex flex-col gap-6"
+                >
+                  <div className="text-muted-foreground flex-1 italic text-lg leading-relaxed">"{t.quote}"</div>
+                  <div className="flex items-center gap-4">
+                    <Avatar>
+                      <AvatarFallback className="bg-primary/20 text-primary">{t.initials}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <div className="font-semibold text-white">{t.name}</div>
+                      <div className="text-sm text-muted-foreground">{t.role}</div>
+                    </div>
                   </div>
-                </div>
-              </motion.div>
-            ))}
+                </motion.div>
+              ))
+            ) : (
+              <div className="col-span-full text-center text-muted-foreground">No testimonials available.</div>
+            )}
           </div>
         </section>
 

@@ -12,55 +12,16 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useFetch } from "@/lib/backend";
 
-const EVENT_DATA = {
-  title: "AI Summit 2026",
-  organizer: "TechEvents India Pvt. Ltd.",
-  category: "AI",
-  venue: "Bengaluru International Convention Centre, Bengaluru",
-  date: "15/08/2026",
-  time: "10:00 AM IST",
-  capacity: "2,500 attendees",
-  description: "Join the largest gathering of Artificial Intelligence professionals, researchers, and enthusiasts in India. AI Summit 2026 brings together the brightest minds to discuss the future of machine learning, neural networks, and generative AI.\n\nOver the course of three days, you'll experience hands-on workshops, insightful panel discussions, and unmatched networking opportunities with industry leaders from top tech companies globally.",
-  speakers: [
-    { name: "Dr. Priya Sharma", role: "AI Research Lead", company: "Google India", initials: "PS", color: "bg-blue-500" },
-    { name: "Rahul Mehta", role: "CTO", company: "Razorpay", initials: "RM", color: "bg-indigo-500" },
-    { name: "Ananya Singh", role: "Founder", company: "AIStartup.in", initials: "AS", color: "bg-purple-500" },
-    { name: "Vikram Nair", role: "VP Engineering", company: "Infosys", initials: "VN", color: "bg-violet-500" }
-  ],
-  agenda: [
-    { time: "09:00 AM", title: "Registration & Welcome", type: "General" },
-    { time: "10:00 AM", title: "Opening Keynote: The Future of AI in India", type: "Keynote" },
-    { time: "11:30 AM", title: "Panel Discussion: AI in Enterprise", type: "Panel" },
-    { time: "01:00 PM", title: "Lunch Break & Networking", type: "Break" },
-    { time: "02:00 PM", title: "Workshop: Hands-on ML with TensorFlow", type: "Workshop" },
-    { time: "04:00 PM", title: "Fireside Chat with Industry Leaders", type: "Session" },
-    { time: "05:30 PM", title: "Closing Ceremony & Networking", type: "General" }
-  ],
-  faqs: [
-    { q: "Is the event in-person or virtual?", a: "The AI Summit 2026 is an exclusively in-person event held in Bengaluru to maximize networking opportunities and hands-on workshop participation." },
-    { q: "What is the refund policy?", a: "Tickets are fully refundable up to 30 days before the event. After that, you may transfer your ticket to another person." },
-    { q: "Will sessions be recorded?", a: "Yes, all keynote and panel sessions will be recorded and made available to VIP and General pass holders after the event." },
-    { q: "Is food included?", a: "Yes, lunch and two high-tea breaks are included with all ticket types." },
-    { q: "How do I get my ticket after purchase?", a: "You will receive an email with a QR code immediately after purchase. Present this QR code at the registration desk on the day of the event." }
-  ],
-  reviews: [
-    { name: "Siddharth Rao", rating: 5, date: "12/08/2025", comment: "Attended last year's event and it was phenomenal. The speakers were top-notch and the networking was invaluable." },
-    { name: "Neha Gupta", rating: 4, date: "15/08/2025", comment: "Great insights on generative AI. The venue was a bit crowded during lunch, but the sessions made up for it." },
-    { name: "Arjun Desai", rating: 5, date: "20/08/2025", comment: "The TensorFlow workshop alone was worth the ticket price. Highly recommended for devs." }
-  ],
-  tickets: [
-    { id: "t1", name: "General Pass", price: 499, desc: "Access to all general sessions" },
-    { id: "t2", name: "VIP Pass", price: 1499, desc: "Front row seats + exclusive networking dinner" },
-    { id: "t3", name: "Early Bird", price: 799, desc: "Limited seats — 20% off regular price" }
-  ]
-};
+// Event data will be fetched from the backend by id
 
 export default function EventDetails() {
   const { id } = useParams();
   const [, setLocation] = useLocation();
   const [saved, setSaved] = useState(false);
-  const [quantities, setQuantities] = useState<Record<string, number>>({ t1: 1, t2: 0, t3: 0 });
+  const { data: eventData, isLoading } = useFetch<any>(id ? `/api/events/${id}` : null);
+  const [quantities, setQuantities] = useState<Record<string, number>>({});
 
   const updateQuantity = (tId: string, delta: number) => {
     setQuantities(prev => ({
@@ -70,13 +31,19 @@ export default function EventDetails() {
   };
 
   const selectedTotal = Object.entries(quantities).reduce((acc, [tId, qty]) => {
-    const ticket = EVENT_DATA.tickets.find(t => t.id === tId);
+    const ticket = eventData?.tickets?.find((t: any) => t.id === tId);
     return acc + (ticket ? ticket.price * qty : 0);
   }, 0);
 
   return (
     <div className="min-h-screen bg-background pb-20 lg:pb-0">
-      <Navbar />
+  <Navbar />
+  {isLoading ? (
+    <div className="max-w-7xl mx-auto px-6 py-12 text-center text-muted-foreground">Loading event…</div>
+  ) : !eventData ? (
+    <div className="max-w-7xl mx-auto px-6 py-12 text-center text-muted-foreground">Event not found</div>
+  ) : (
+    <>
       {/* Hero Banner */}
       <div className="relative w-full h-[400px] md:h-[500px] mt-16 bg-gradient-to-br from-indigo-900 via-purple-900 to-blue-900 flex items-end pb-16 px-6 lg:px-12">
         <div className="absolute inset-0 bg-black/40" />
@@ -98,12 +65,12 @@ export default function EventDetails() {
 
         <div className="relative z-10 max-w-7xl mx-auto w-full">
           <Badge className="bg-primary/20 text-primary-foreground border-primary/30 mb-4 px-3 py-1 backdrop-blur-md">
-            {EVENT_DATA.category}
+            {eventData?.category}
           </Badge>
           <h1 className="text-4xl md:text-6xl font-bold text-white mb-2 tracking-tight">
-            {EVENT_DATA.title}
+            {eventData?.title}
           </h1>
-          <p className="text-white/80 text-lg">by {EVENT_DATA.organizer}</p>
+          <p className="text-white/80 text-lg">by {eventData?.organizer}</p>
         </div>
       </div>
 
@@ -117,8 +84,8 @@ export default function EventDetails() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground font-medium">Date & Time</p>
-                <p className="text-foreground font-semibold">{EVENT_DATA.date}</p>
-                <p className="text-sm text-muted-foreground">{EVENT_DATA.time}</p>
+                <p className="text-foreground font-semibold">{eventData?.date}</p>
+                <p className="text-sm text-muted-foreground">{eventData?.time}</p>
               </div>
             </div>
 
@@ -128,7 +95,7 @@ export default function EventDetails() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground font-medium">Location</p>
-                <p className="text-foreground font-semibold line-clamp-1">{EVENT_DATA.venue}</p>
+                <p className="text-foreground font-semibold line-clamp-1">{eventData?.venue}</p>
                 <p className="text-sm text-blue-400 cursor-pointer hover:underline">Show on map</p>
               </div>
             </div>
@@ -139,7 +106,7 @@ export default function EventDetails() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground font-medium">Capacity</p>
-                <p className="text-foreground font-semibold">{EVENT_DATA.capacity}</p>
+                <p className="text-foreground font-semibold">{eventData?.capacity}</p>
               </div>
             </div>
           </CardContent>
@@ -148,15 +115,13 @@ export default function EventDetails() {
 
       {/* Main Content Area */}
       <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-3 gap-12 pb-24">
-        
         {/* Left Column (Content) */}
         <div className="lg:col-span-2 space-y-16">
-          
           {/* Description */}
           <section>
             <h2 className="text-2xl font-bold text-foreground mb-6">About this event</h2>
             <div className="space-y-4 text-muted-foreground leading-relaxed">
-              {EVENT_DATA.description.split('\n\n').map((p, i) => (
+              {(eventData?.description || '').split('\n\n').map((p: string, i: number) => (
                 <p key={i}>{p}</p>
               ))}
             </div>
@@ -166,11 +131,11 @@ export default function EventDetails() {
           <section>
             <h2 className="text-2xl font-bold text-foreground mb-6">Speakers</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              {EVENT_DATA.speakers.map((speaker, i) => (
+              {(eventData?.speakers || []).map((speaker: any, i: number) => (
                 <Card key={i} className="glass-panel border-white/5 bg-white/5 hover:bg-white/10 transition-colors">
                   <CardContent className="p-6 flex items-center gap-4">
-                    <Avatar className={`h-16 w-16 ${speaker.color}`}>
-                      <AvatarFallback className="text-white font-bold">{speaker.initials}</AvatarFallback>
+                    <Avatar className={`h-16 w-16 ${speaker.color || ''}`}>
+                      <AvatarFallback className="text-white font-bold">{speaker.initials || speaker.name?.split(' ').map((s: string) => s[0]).slice(0,2).join('')}</AvatarFallback>
                     </Avatar>
                     <div>
                       <h3 className="font-semibold text-foreground text-lg">{speaker.name}</h3>
@@ -187,7 +152,7 @@ export default function EventDetails() {
           <section>
             <h2 className="text-2xl font-bold text-foreground mb-6">Agenda</h2>
             <div className="space-y-6 relative before:absolute before:inset-0 before:ml-4 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-white/10 before:to-transparent">
-              {EVENT_DATA.agenda.map((item, i) => (
+              {(eventData?.agenda || []).map((item: any, i: number) => (
                 <div key={i} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
                   <div className="flex items-center justify-center w-8 h-8 rounded-full border-2 border-white/10 bg-card text-muted-foreground group-hover:text-primary group-hover:border-primary shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 shadow-lg transition-colors z-10 ml-0 md:ml-auto">
                     <div className="w-2 h-2 rounded-full bg-current"></div>
@@ -210,10 +175,9 @@ export default function EventDetails() {
             <h2 className="text-2xl font-bold text-foreground mb-6">Location</h2>
             <div className="glass-panel border-white/5 rounded-2xl p-2 relative h-64 overflow-hidden flex flex-col items-center justify-center group">
               <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+CjxyZWN0IHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgZmlsbD0ibm9uZSIvPgo8cGF0aCBkPSJNMCAwaDQwdjQwSDB6IiBmaWxsPSJub25lIi8+CjxwYXRoIGQ9Ik0wIDAuNWg0MG0tNDAgMzlINDBNMCAuNXYzOW0zOS0zOVY0MCIgc3Ryb2tlPSJyZ2JhKDI1NSwgMjU1LCAyNTUsIDAuMSkiIHN0cm9rZS13aWR0aD0iMSIvPgo8L3N2Zz4=')] bg-center [mask-image:linear-gradient(to_bottom,white,transparent)]" />
-              
               <div className="z-10 bg-background/80 backdrop-blur-xl p-4 rounded-xl border border-white/10 text-center shadow-2xl transition-transform group-hover:scale-105">
                 <MapPin className="w-8 h-8 text-primary mx-auto mb-2" />
-                <p className="font-semibold text-foreground mb-1">{EVENT_DATA.venue}</p>
+                <p className="font-semibold text-foreground mb-1">{eventData?.venue}</p>
                 <Button variant="link" className="text-primary h-auto p-0">Open in Google Maps <ChevronRight className="w-4 h-4 ml-1" /></Button>
               </div>
             </div>
@@ -223,7 +187,7 @@ export default function EventDetails() {
           <section>
             <h2 className="text-2xl font-bold text-foreground mb-6">Frequently Asked Questions</h2>
             <Accordion type="single" collapsible className="w-full">
-              {EVENT_DATA.faqs.map((faq, i) => (
+              {(eventData?.faqs || []).map((faq: any, i: number) => (
                 <AccordionItem key={i} value={`item-${i}`} className="border-white/10">
                   <AccordionTrigger className="text-left text-foreground hover:text-primary transition-colors">
                     {faq.q}
@@ -240,7 +204,7 @@ export default function EventDetails() {
           <section>
             <h2 className="text-2xl font-bold text-foreground mb-6">Attendee Reviews</h2>
             <div className="grid gap-4">
-              {EVENT_DATA.reviews.map((review, i) => (
+              {(eventData?.reviews || []).map((review: any, i: number) => (
                 <Card key={i} className="glass-panel border-white/5 bg-transparent">
                   <CardContent className="p-6">
                     <div className="flex items-start justify-between mb-4">
@@ -272,8 +236,7 @@ export default function EventDetails() {
         <div className="lg:col-span-1">
           <div className="sticky top-24 space-y-6 hidden lg:block">
             <h3 className="text-2xl font-bold text-foreground mb-6">Select Tickets</h3>
-            
-            {EVENT_DATA.tickets.map((ticket) => (
+            {(eventData?.tickets || []).map((ticket: any) => (
               <Card key={ticket.id} className={`glass-panel transition-all ${quantities[ticket.id] > 0 ? "border-primary/50 bg-primary/5" : "border-white/10"}`}>
                 <CardContent className="p-6">
                   <div className="flex justify-between items-start mb-2">
@@ -304,7 +267,6 @@ export default function EventDetails() {
             ))}
 
             <Separator className="bg-white/10 my-6" />
-            
             <div className="glass-panel p-6 rounded-2xl border-white/10">
               <div className="flex justify-between items-center mb-6">
                 <span className="text-muted-foreground">Total</span>
@@ -320,19 +282,20 @@ export default function EventDetails() {
             </div>
           </div>
         </div>
-
       </div>
 
       {/* Mobile Sticky Bottom Bar */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 glass-panel border-t border-white/10 p-4 z-50 flex items-center justify-between shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
         <div>
           <p className="text-sm text-muted-foreground">Starts from</p>
-          <p className="text-xl font-bold text-foreground">₹499</p>
+          <p className="text-xl font-bold text-foreground">₹{eventData?.tickets?.[0]?.price || '—'}</p>
         </div>
         <Button className="bg-gradient-to-r from-primary to-blue-600 px-8" onClick={() => setLocation(`/events/${id}/register`)}>
           Get Tickets
         </Button>
       </div>
+    </>
+  )}
     </div>
   );
 }

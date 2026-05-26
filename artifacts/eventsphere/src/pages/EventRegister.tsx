@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useRoute, useLocation } from "wouter";
 import { ArrowLeft, Ticket, Calendar, MapPin } from "lucide-react";
+import { useFetch } from "@/lib/backend";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,20 +19,9 @@ export default function EventRegister() {
     tickets: 1,
   });
 
-  // Mock event data - in a real app this would come from an API
-  const event = useMemo(() => {
-    const isPaid = id === "1" || id === "2" || id === "3";
-    return {
-      id,
-      title: "Global Tech Summit 2024",
-      date: "March 15, 2024",
-      venue: "Grand Convention Center, Mumbai",
-      isPaid,
-      price: isPaid ? 999 : 0,
-    };
-  }, [id]);
+  const { data: event, isLoading } = useFetch<any>(id ? `/api/events/${id}` : null);
 
-  const totalAmount = event.price * formData.tickets;
+  const totalAmount = (event?.price || 0) * formData.tickets;
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -43,7 +33,7 @@ export default function EventRegister() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (event.isPaid) {
+    if (event?.isPaid) {
       // Store checkout info in session/state and navigate to payment
       setLocation("/payment");
     } else {
@@ -91,7 +81,7 @@ export default function EventRegister() {
                       id="email"
                       name="email"
                       type="email"
-                      placeholder="rahul@example.com"
+                      placeholder="you@example.com"
                       value={formData.email}
                       onChange={handleInputChange}
                       required
@@ -125,8 +115,8 @@ export default function EventRegister() {
                     />
                   </div>
 
-                  <Button type="submit" className="w-full h-12 text-lg font-semibold bg-gradient-to-r from-primary to-blue-600 hover:shadow-lg hover:shadow-primary/25 transition-all duration-300">
-                    {event.isPaid ? `Buy Ticket - ₹${totalAmount}` : "Register Now"}
+                  <Button type="submit" disabled={isLoading} className="w-full h-12 text-lg font-semibold bg-gradient-to-r from-primary to-blue-600 hover:shadow-lg hover:shadow-primary/25 transition-all duration-300">
+                    {isLoading ? 'Loading…' : (event?.isPaid ? `Buy Ticket - ₹${totalAmount}` : "Register Now")}
                   </Button>
                 </form>
               </CardContent>
@@ -143,14 +133,14 @@ export default function EventRegister() {
                   <div className="flex gap-3 text-sm">
                     <Calendar className="w-5 h-5 text-primary" />
                     <div>
-                      <p className="font-medium text-foreground">{event.date}</p>
+                      <p className="font-medium text-foreground">{event?.date}</p>
                       <p className="text-muted-foreground text-xs">Starting at 10:00 AM</p>
                     </div>
                   </div>
                   <div className="flex gap-3 text-sm">
                     <MapPin className="w-5 h-5 text-primary" />
                     <div>
-                      <p className="font-medium text-foreground">{event.venue}</p>
+                      <p className="font-medium text-foreground">{event?.venue}</p>
                       <p className="text-muted-foreground text-xs">Show on map</p>
                     </div>
                   </div>
@@ -159,7 +149,7 @@ export default function EventRegister() {
                 <div className="pt-6 border-t border-white/10 space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Ticket Price</span>
-                    <span className="text-foreground font-medium">₹{event.price}</span>
+                    <span className="text-foreground font-medium">₹{event?.price ?? 0}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Quantity</span>

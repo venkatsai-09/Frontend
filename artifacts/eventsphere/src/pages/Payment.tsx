@@ -1,6 +1,7 @@
 import { useLocation } from "wouter";
 import { CreditCard, Smartphone, CheckCircle2, ChevronRight, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useFetch } from "@/lib/backend";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
@@ -8,16 +9,7 @@ import { Label } from "@/components/ui/label";
 export default function Payment() {
   const [, setLocation] = useLocation();
 
-  // Mock data for display
-  const orderDetails = {
-    eventName: "Global Tech Summit 2024",
-    date: "March 15, 2024",
-    venue: "Grand Convention Center, Mumbai",
-    ticketType: "Regular Entry",
-    qty: 1,
-    unitPrice: 999,
-    totalAmount: 999,
-  };
+  const { data: orderDetails, isLoading } = useFetch<any>('/api/orders/current');
 
   const handlePayment = () => {
     // Simulate payment processing
@@ -26,7 +18,7 @@ export default function Payment() {
 
   return (
     <div className="min-h-screen bg-background py-12 px-4">
-      <div className="container max-w-4xl">
+    <div className="container max-w-4xl">
         <div className="text-center mb-10">
           <h1 className="text-4xl font-bold mb-2">Secure Checkout</h1>
           <p className="text-muted-foreground">Complete your payment to receive your ticket</p>
@@ -93,8 +85,9 @@ export default function Payment() {
                   <Button 
                     onClick={handlePayment}
                     className="w-full h-14 text-xl font-bold bg-primary hover:bg-primary/90 shadow-lg shadow-primary/25"
+                    disabled={isLoading || !orderDetails}
                   >
-                    Pay ₹{orderDetails.totalAmount}
+                    {isLoading ? 'Loading…' : orderDetails ? `Pay ₹${orderDetails.totalAmount}` : 'Proceed to Pay'}
                   </Button>
                 </div>
               </CardContent>
@@ -108,15 +101,15 @@ export default function Payment() {
               </CardHeader>
               <CardContent className="pt-6 space-y-6">
                 <div>
-                  <h3 className="font-bold text-lg mb-1">{orderDetails.eventName}</h3>
-                  <p className="text-sm text-muted-foreground">{orderDetails.date}</p>
-                  <p className="text-sm text-muted-foreground">{orderDetails.venue}</p>
+                  <h3 className="font-bold text-lg mb-1">{orderDetails?.eventName ?? 'Selected Event'}</h3>
+                  <p className="text-sm text-muted-foreground">{orderDetails?.date ?? ''}</p>
+                  <p className="text-sm text-muted-foreground">{orderDetails?.venue ?? ''}</p>
                 </div>
 
                 <div className="space-y-3">
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">{orderDetails.ticketType} x {orderDetails.qty}</span>
-                    <span className="text-foreground">₹{orderDetails.unitPrice * orderDetails.qty}</span>
+                    <span className="text-muted-foreground">{orderDetails?.ticketType ?? ''} x {orderDetails?.qty ?? 1}</span>
+                    <span className="text-foreground">₹{(orderDetails?.unitPrice || 0) * (orderDetails?.qty || 1)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Platform Fee</span>
@@ -124,7 +117,7 @@ export default function Payment() {
                   </div>
                   <div className="pt-4 border-t border-white/10 flex justify-between items-center">
                     <span className="text-lg font-bold">Total Amount</span>
-                    <span className="text-2xl font-bold text-primary">₹{orderDetails.totalAmount}</span>
+                    <span className="text-2xl font-bold text-primary">₹{orderDetails?.totalAmount ?? '—'}</span>
                   </div>
                 </div>
 
