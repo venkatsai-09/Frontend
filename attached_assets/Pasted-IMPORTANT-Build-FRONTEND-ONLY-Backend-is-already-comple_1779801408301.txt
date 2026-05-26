@@ -1,0 +1,237 @@
+IMPORTANT:
+
+Build FRONTEND ONLY.
+
+Backend is already completed by another team.
+
+Do NOT create:
+
+- Express server
+- Node backend
+- Database schemas
+- Authentication backend
+- Payment backend
+- AI backend
+
+Only create:
+
+- React Components
+- Pages
+- Navigation
+- Responsive UI
+- API integration placeholders
+
+India Localization:
+
+- Currency must always be ₹ INR
+- Never display $
+- Dates in DD/MM/YYYY
+- Timezone IST
+
+Code Quality:
+
+- No TypeScript errors
+- No undefined variables
+- No console errors
+- No broken imports
+- No broken routes
+
+UI Requirements:
+
+- Dark Theme
+- Purple + Blue accents
+- Modern SaaS Design
+- Glassmorphism
+- Mobile Responsive
+
+Create reusable components.
+
+Use mock JSON data only.
+
+All buttons should have placeholder handlers.
+Create a premium landing page for EventSphere.
+
+Pages:
+
+1. Landing Page
+2. Login Page
+3. Signup Page
+4. Role Selection Page
+
+------------------------------------------------
+
+LANDING PAGE
+
+Navbar:
+
+Logo:
+EventSphere
+
+Menu:
+
+- Home
+- Events
+- Features
+- Organizer Portal
+- Attendee Portal
+- Login
+- Sign Up
+
+Sticky navbar with blur effect.
+
+------------------------------------------------
+
+Hero Section
+
+Headline:
+
+Discover, Manage & Experience Events Smarter with AI
+
+Subheadline:
+
+The ultimate AI-powered event management platform for organizers and attendees.
+
+Buttons:
+
+- Explore Events
+- Organize Event
+
+------------------------------------------------
+
+Hero Visual
+
+Display:
+
+- Dashboard Mockup
+- Floating Event Cards
+- Ticket Cards
+- Analytics Preview
+
+------------------------------------------------
+
+Statistics
+
+50,000+ Attendees
+
+5,000+ Events
+
+1,000+ Organizers
+
+98% Satisfaction
+
+------------------------------------------------
+
+Featured Events
+
+Display 6 event cards.
+
+Each card:
+
+- Image
+- Event Name
+- Category
+- Date
+- Location
+- Price in INR
+
+------------------------------------------------
+
+Categories
+
+AI
+
+Technology
+
+Business
+
+Music
+
+Sports
+
+Education
+
+Networking
+
+------------------------------------------------
+
+Testimonials
+
+Three modern testimonial cards.
+
+------------------------------------------------
+
+LOGIN PAGE
+
+Fields:
+
+Email
+
+Password
+
+Buttons:
+
+Login
+
+Google Login
+
+Links:
+
+Forgot Password
+
+Create Account
+
+------------------------------------------------
+
+SIGNUP PAGE
+
+Fields:
+
+Full Name
+
+Email
+
+Password
+
+Confirm Password
+
+Role Selection
+
+Validation UI only.
+
+------------------------------------------------
+
+ROLE SELECTION PAGE
+
+Card 1:
+
+Attendee
+
+Icon:
+Users
+
+Description:
+
+Discover and attend amazing events.
+
+Button:
+
+Continue as Attendee
+
+Card 2:
+
+Organizer
+
+Icon:
+Briefcase
+
+Description:
+
+Create and manage events using AI.
+
+Button:
+
+Continue as Organizer
+
+------------------------------------------------
+
+Responsive Design Required.
