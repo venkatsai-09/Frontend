@@ -13,9 +13,9 @@ export function Navbar() {
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-[0_0_15px_rgba(124,58,237,0.5)]">
-            <span className="text-white font-bold text-lg leading-none">E</span>
+            <span className="font-bold text-lg leading-none text-[#ffffff] bg-[transparent]">E</span>
           </div>
-          <span className="font-bold text-xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-white/70">
+          <span className="font-bold text-xl tracking-tight bg-clip-text bg-gradient-to-r from-white to-white/70 text-[#ffffff00]">
             EventSphere
           </span>
         </Link>
