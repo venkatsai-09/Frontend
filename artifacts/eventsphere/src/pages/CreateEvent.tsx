@@ -1,5 +1,4 @@
-import React, { useState } from "react";
-import { Link } from "wouter";
+import { useState } from "react";
 import {
   UploadCloud, PlusCircle, X, Sparkles, RefreshCw, Copy, ArrowLeft, Eye, Search, Bell, Menu
 } from "lucide-react";

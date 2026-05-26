@@ -1,8 +1,7 @@
-import React from "react";
 import { Link, useLocation } from "wouter";
 import { 
   LayoutDashboard, PlusCircle, CalendarDays, Users, BarChart3, 
-  Sparkles, CreditCard, Settings, Bell, Search, Menu
+  Sparkles, CreditCard, Settings
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";

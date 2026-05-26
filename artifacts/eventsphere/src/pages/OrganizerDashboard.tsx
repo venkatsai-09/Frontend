@@ -1,5 +1,3 @@
-import React, { useState } from "react";
-import { Link } from "wouter";
 import { 
   LayoutDashboard, PlusCircle, CalendarDays, Users, BarChart3, 
   Sparkles, CreditCard, Settings, Search, Bell, Menu,
