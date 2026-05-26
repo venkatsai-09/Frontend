@@ -7,6 +7,8 @@ import Landing from "@/pages/landing";
 import Login from "@/pages/login";
 import Signup from "@/pages/signup";
 import RoleSelect from "@/pages/role-select";
+import Events from "@/pages/Events";
+import EventDetails from "@/pages/EventDetails";
 
 const queryClient = new QueryClient();
 
@@ -17,6 +19,8 @@ function Router() {
       <Route path="/login" component={Login} />
       <Route path="/signup" component={Signup} />
       <Route path="/role-select" component={RoleSelect} />
+      <Route path="/events" component={Events} />
+      <Route path="/events/:id" component={EventDetails} />
       <Route component={NotFound} />
     </Switch>
   );
