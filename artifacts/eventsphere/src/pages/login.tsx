@@ -1,4 +1,5 @@
 import { Link, useLocation } from "wouter";
+import { login as loginClient } from '@/services/authClient';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -31,31 +32,10 @@ export default function Login() {
 
     (async () => {
       try {
-        const res = await fetch('/api/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password }),
-        });
-
-        if (res.status === 401 || res.status === 400) {
-          // show error using FormMessage - trigger by throwing
-          form.setError('email', { type: 'manual', message: 'Invalid login credentials' });
-          form.setError('password', { type: 'manual', message: '' });
-          return;
-        }
-
-        if (!res.ok) {
-          // fallback: treat as invalid credentials for UX
-          form.setError('email', { type: 'manual', message: 'Invalid login credentials' });
-          return;
-        }
-
-        const body = await res.json().catch(() => ({}));
-        // navigate based on role returned by backend or default to attendee
-        const role = (body && body.role) || (email.toLowerCase().includes('organizer') ? 'organizer' : 'attendee');
-        setLocation(role === 'organizer' ? '/organizer' : '/attendee');
+        const profile = await loginClient(email, password);
+        setLocation(profile.role === 'organizer' ? '/organizer' : '/attendee');
       } catch (err) {
-        form.setError('email', { type: 'manual', message: 'Invalid login credentials' });
+        form.setError('email', { type: 'manual', message: (err as Error).message || 'Invalid login credentials' });
       }
     })();
   };

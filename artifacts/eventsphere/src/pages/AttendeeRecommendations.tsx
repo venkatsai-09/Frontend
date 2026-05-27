@@ -2,27 +2,42 @@ import { useState } from "react";
 import { Link } from "wouter";
 import { AttendeeLayout } from "@/components/AttendeeLayout";
 import { 
-  Sparkles, Calendar, MapPin, Star, Heart, Loader2
+  Sparkles, Calendar, MapPin, Star, Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Empty } from "@/components/ui/empty";
-import { useFetch } from "@/lib/backend";
+import { useAuth } from "@/contexts/AuthContext";
+import { getRecommendedEvents } from "@/services/aiClient";
 
 export default function AttendeeRecommendations() {
   const [isLoading, setIsLoading] = useState(false);
   const [showRecommendations, setShowRecommendations] = useState(false);
-  const { data: recommendations, isLoading: fetching, refresh } = useFetch<Array<any>>(showRecommendations ? "/api/recommendations" : null);
+  const { user } = useAuth();
+  const [recommendations, setRecommendations] = useState<Array<any>>([]);
 
-  const loadRecommendations = () => {
+  const loadRecommendations = async () => {
+    if (!user?.uid) {
+      setShowRecommendations(true);
+      setRecommendations([]);
+      return;
+    }
+
     setIsLoading(true);
     setShowRecommendations(true);
-    // trigger fetch
-    refresh();
-    setTimeout(() => {
+
+    try {
+      const recommendationRows = await getRecommendedEvents(user.uid);
+      const events = recommendationRows
+        .map((row: any) => (row?.event ? row.event : row))
+        .filter(Boolean);
+      setRecommendations(events);
+    } catch (err) {
+      console.error("Failed to load recommendations:", err);
+      setRecommendations([]);
+    } finally {
       setIsLoading(false);
-    }, 800);
+    }
   };
 
   return (
@@ -55,7 +70,7 @@ export default function AttendeeRecommendations() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {fetching ? (
+            {isLoading ? (
               <div className="col-span-full text-center py-12 text-muted-foreground">Loading recommendations…</div>
             ) : (!recommendations || recommendations.length === 0) ? (
               <div className="col-span-full text-center py-12 text-muted-foreground">No recommendations available yet</div>
@@ -65,7 +80,7 @@ export default function AttendeeRecommendations() {
                   <Card className="glass-panel overflow-hidden flex flex-col group border-white/5 hover:border-primary/50 transition-all duration-300 cursor-pointer">
                     <div className={`h-40 bg-gradient-to-br ${event.gradient || ''} relative`}>
                       <Badge className="absolute top-4 left-4 bg-background/50 backdrop-blur-md text-foreground border-none">
-                        {event.category}
+                        {event.category || event.eventType || "Event"}
                       </Badge>
                     </div>
                     
@@ -73,20 +88,22 @@ export default function AttendeeRecommendations() {
                       <h3 className="text-xl font-semibold mb-2 text-foreground group-hover:text-primary transition-colors line-clamp-1">{event.title || event.name}</h3>
                       <div className="space-y-2 text-sm text-muted-foreground">
                         <div className="flex items-center">
-                          <Calendar className="w-4 h-4 mr-2 text-primary/70" /> {event.date}
+                          <Calendar className="w-4 h-4 mr-2 text-primary/70" /> {event.date || "TBA"}
                         </div>
                         <div className="flex items-center">
-                          <MapPin className="w-4 h-4 mr-2 text-primary/70" /> {event.location}
+                          <MapPin className="w-4 h-4 mr-2 text-primary/70" /> {event.location || event.venue?.name || event.city || "TBA"}
                         </div>
-                        <div className="flex items-center">
-                          <Star className="w-4 h-4 mr-2 text-yellow-500" /> {event.rating}/5
-                        </div>
+                        {typeof event.rating !== "undefined" && (
+                          <div className="flex items-center">
+                            <Star className="w-4 h-4 mr-2 text-yellow-500" /> {event.rating}/5
+                          </div>
+                        )}
                       </div>
                     </CardContent>
 
                     <CardFooter className="pt-4 border-t border-white/10 flex justify-between items-center">
                       <span className="font-semibold text-lg text-foreground">
-                        ₹{event.price}
+                        ₹{typeof event.price === "number" ? event.price : 0}
                       </span>
                       <Button size="sm" className="bg-primary hover:bg-primary/90">
                         Register

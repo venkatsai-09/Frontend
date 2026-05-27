@@ -18,6 +18,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from '@/contexts/AuthContext';
+import { createEvent as createEventClient } from '@/services/eventClient';
+import { generateAIDescription } from '@/services/aiClient';
+import { useLocation } from 'wouter';
 
 import { OrganizerSidebar } from "@/components/OrganizerSidebar";
 
@@ -111,17 +115,46 @@ export default function CreateEvent() {
     }
   };
 
-  const onSubmit = (data: FormValues) => {
-    console.log("Form data:", data);
-    toast({
-      title: "Event Published",
-      description: "Your event has been successfully created."
-    });
+  const { user } = useAuth();
+  const [, setLocation] = useLocation();
+
+  const onSubmit = async (data: FormValues) => {
+    try {
+      if (!user) throw new Error('User not authenticated');
+
+      // Map form data to event payload
+      const payload = {
+        title: data.eventName,
+        description: data.description,
+        category: data.category,
+        venue: {
+          name: data.venueName,
+          address: data.address,
+          city: data.city,
+        },
+        date: data.date,
+        startTime: data.startTime,
+        endTime: data.endTime,
+        price: data.tickets.general.enabled ? Number(data.tickets.general.price) : (data.tickets.vip.enabled ? Number(data.tickets.vip.price) : 0),
+        image: bannerPreview,
+        organizerId: user.uid,
+        organizerRole: user.role,
+      };
+
+      await createEventClient(payload as any);
+
+      toast({ title: 'Event Published', description: 'Your event has been successfully created.' });
+      setLocation('/organizer');
+    } catch (err) {
+      console.error('Create event error:', err);
+      toast({ title: 'Error', description: (err as Error).message || 'Failed to create event' });
+    }
   };
 
   // AI Description Generator State
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedContent, setGeneratedContent] = useState(false);
+  const [generatedText, setGeneratedText] = useState<string | null>(null);
   const [aiForm, setAiForm] = useState({
     eventName: form.watch("eventName"),
     highlights: "",
@@ -130,22 +163,52 @@ export default function CreateEvent() {
     goals: ""
   });
 
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     setIsGenerating(true);
-    setTimeout(() => {
+    setGeneratedContent(false);
+    setGeneratedText(null);
+    try {
+      // Map frontend fields to backend AI input
+      const payload = {
+        title: aiForm.eventName || form.getValues().eventName || '',
+        category: form.getValues().category || '',
+        targetAudience: aiForm.audience || '',
+        location: form.getValues().venueName || form.getValues().city || '',
+        theme: aiForm.highlights || aiForm.goals || ''
+      };
+
+      const text = await generateAIDescription(payload).catch((err) => {
+        console.error('AI generate failed', err);
+        return '';
+      });
+
+      if (text && text.trim().length > 0) {
+        const generatedDescription = text.trim();
+        setGeneratedText(generatedDescription);
+        setGeneratedContent(true);
+        // Auto-fill the main description immediately after generation.
+        form.setValue('description', generatedDescription);
+        toast({ title: 'AI description generated' });
+      } else {
+        setGeneratedText(null);
+        setGeneratedContent(false);
+        toast({ title: 'AI generation', description: 'No description returned from AI' });
+      }
+    } catch (err) {
+      console.error('Generate error', err);
+      toast({ title: 'AI generation error', description: (err as Error).message || 'Failed to generate' });
+    } finally {
       setIsGenerating(false);
-      setGeneratedContent(true);
-    }, 2000);
+    }
   };
 
   const handleInsertIntoForm = () => {
-    // Insert generated content if available. Avoid inserting demo/canned text.
-    const generated = form.getValues().description || '';
-    if (generated) {
-      form.setValue("description", generated);
-      toast({ title: "Content Inserted", description: "AI description added to event form." });
+    // Insert generated content into the event description field
+    if (generatedText && generatedText.length > 0) {
+      form.setValue('description', generatedText);
+      toast({ title: 'Content Inserted', description: 'AI description added to event form.' });
     } else {
-      toast({ title: "No content", description: "No generated content available to insert." });
+      toast({ title: 'No content', description: 'No generated content available to insert.' });
     }
   };
 

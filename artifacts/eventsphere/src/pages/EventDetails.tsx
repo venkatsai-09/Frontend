@@ -12,7 +12,8 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useFetch } from "@/lib/backend";
+import { useEvent } from '@/services/eventClient';
+import { safeText, defaultTicketFromEvent } from '@/utils/renderUtils';
 
 // Event data will be fetched from the backend by id
 
@@ -20,7 +21,7 @@ export default function EventDetails() {
   const { id } = useParams();
   const [, setLocation] = useLocation();
   const [saved, setSaved] = useState(false);
-  const { data: eventData, isLoading } = useFetch<any>(id ? `/api/events/${id}` : null);
+  const { data: eventData, isLoading } = useEvent(id ?? null);
   const [quantities, setQuantities] = useState<Record<string, number>>({});
 
   const updateQuantity = (tId: string, delta: number) => {
@@ -31,9 +32,48 @@ export default function EventDetails() {
   };
 
   const selectedTotal = Object.entries(quantities).reduce((acc, [tId, qty]) => {
-    const ticket = eventData?.tickets?.find((t: any) => t.id === tId);
+    const ticketsSource = (eventData?.tickets && eventData.tickets.length) ? eventData.tickets : [defaultTicketFromEvent(eventData)];
+    const ticket = ticketsSource.find((t: any) => t.id === tId);
     return acc + (ticket ? ticket.price * qty : 0);
   }, 0);
+
+  const goToRegister = () => {
+    // find first selected ticket (support one type at a time)
+    const selected = Object.entries(quantities).find(([_, q]) => q > 0);
+    let ticketId: string | null = null;
+    let qty = 0;
+    if (selected) {
+      ticketId = selected[0];
+      qty = selected[1];
+    } else if ((eventData?.tickets || []).length === 1) {
+      const t0 = eventData?.tickets?.[0];
+      if (t0) {
+        ticketId = t0.id;
+        qty = 1;
+      }
+    }
+
+    // For free events, allow proceeding even if nothing explicitly selected.
+    if ((!ticketId || qty <= 0) && (eventData?.price || 0) === 0) {
+      // Derive a default ticket id from event tickets if present, else use 'general'
+      const defaultTicket = (eventData?.tickets && eventData.tickets.length > 0) ? eventData.tickets[0].id : 'general';
+      ticketId = ticketId || defaultTicket;
+      // if user didn't pick quantity, default to 1
+      const sumQty = Object.values(quantities).reduce((s, v) => s + (v || 0), 0);
+      qty = qty > 0 ? qty : (sumQty > 0 ? sumQty : 1);
+    }
+
+    // if nothing selected for paid events, don't navigate
+    if (!ticketId || qty <= 0) return;
+
+    setLocation(`/events/${id}/register?ticketId=${encodeURIComponent(ticketId)}&tickets=${qty}`);
+  };
+
+  // Safe display helpers: use utilities that avoid raw object rendering
+  const organizerDisplay = safeText(eventData?.organizer, 'Organizer');
+  const vAny = eventData?.venue as any;
+  const venueDisplayName = safeText(vAny?.name ?? eventData?.venue, 'Venue');
+  const venueDisplayAddress = safeText({ address: vAny?.address, city: vAny?.city }, '');
 
   return (
     <div className="min-h-screen bg-background pb-20 lg:pb-0">
@@ -70,7 +110,7 @@ export default function EventDetails() {
           <h1 className="text-4xl md:text-6xl font-bold text-white mb-2 tracking-tight">
             {eventData?.title}
           </h1>
-          <p className="text-white/80 text-lg">by {eventData?.organizer}</p>
+          <p className="text-white/80 text-lg">by {organizerDisplay}</p>
         </div>
       </div>
 
@@ -95,7 +135,7 @@ export default function EventDetails() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground font-medium">Location</p>
-                <p className="text-foreground font-semibold line-clamp-1">{eventData?.venue}</p>
+                <p className="text-foreground font-semibold line-clamp-1">{venueDisplayName}</p>
                 <p className="text-sm text-blue-400 cursor-pointer hover:underline">Show on map</p>
               </div>
             </div>
@@ -177,7 +217,8 @@ export default function EventDetails() {
               <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+CjxyZWN0IHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgZmlsbD0ibm9uZSIvPgo8cGF0aCBkPSJNMCAwaDQwdjQwSDB6IiBmaWxsPSJub25lIi8+CjxwYXRoIGQ9Ik0wIDAuNWg0MG0tNDAgMzlINDBNMCAuNXYzOW0zOS0zOVY0MCIgc3Ryb2tlPSJyZ2JhKDI1NSwgMjU1LCAyNTUsIDAuMSkiIHN0cm9rZS13aWR0aD0iMSIvPgo8L3N2Zz4=')] bg-center [mask-image:linear-gradient(to_bottom,white,transparent)]" />
               <div className="z-10 bg-background/80 backdrop-blur-xl p-4 rounded-xl border border-white/10 text-center shadow-2xl transition-transform group-hover:scale-105">
                 <MapPin className="w-8 h-8 text-primary mx-auto mb-2" />
-                <p className="font-semibold text-foreground mb-1">{eventData?.venue}</p>
+                <p className="font-semibold text-foreground mb-1">{venueDisplayName}</p>
+                <p className="text-sm text-muted-foreground mb-1">{venueDisplayAddress}</p>
                 <Button variant="link" className="text-primary h-auto p-0">Open in Google Maps <ChevronRight className="w-4 h-4 ml-1" /></Button>
               </div>
             </div>
@@ -236,7 +277,7 @@ export default function EventDetails() {
         <div className="lg:col-span-1">
           <div className="sticky top-24 space-y-6 hidden lg:block">
             <h3 className="text-2xl font-bold text-foreground mb-6">Select Tickets</h3>
-            {(eventData?.tickets || []).map((ticket: any) => (
+            {((eventData?.tickets && eventData?.tickets.length) ? eventData.tickets : [defaultTicketFromEvent(eventData)]).map((ticket: any) => (
               <Card key={ticket.id} className={`glass-panel transition-all ${quantities[ticket.id] > 0 ? "border-primary/50 bg-primary/5" : "border-white/10"}`}>
                 <CardContent className="p-6">
                   <div className="flex justify-between items-start mb-2">
@@ -267,17 +308,18 @@ export default function EventDetails() {
             ))}
 
             <Separator className="bg-white/10 my-6" />
-            <div className="glass-panel p-6 rounded-2xl border-white/10">
+              <div className="glass-panel p-6 rounded-2xl border-white/10">
               <div className="flex justify-between items-center mb-6">
                 <span className="text-muted-foreground">Total</span>
                 <span className="text-2xl font-bold text-foreground">₹{selectedTotal}</span>
               </div>
               <Button
                 className="w-full bg-gradient-to-r from-primary to-blue-600 hover:from-primary/90 hover:to-blue-600/90 text-white font-semibold py-6 text-lg shadow-lg shadow-primary/25"
-                disabled={selectedTotal === 0}
-                onClick={() => setLocation(`/events/${id}/register`)}
+                // free events should always be enabled; paid events require a selection
+                disabled={((eventData?.price || 0) > 0) ? (selectedTotal === 0) : false}
+                onClick={goToRegister}
               >
-                Checkout
+                {((eventData?.price || 0) > 0) ? 'Checkout' : 'Register Free'}
               </Button>
             </div>
           </div>
@@ -290,8 +332,8 @@ export default function EventDetails() {
           <p className="text-sm text-muted-foreground">Starts from</p>
           <p className="text-xl font-bold text-foreground">₹{eventData?.tickets?.[0]?.price || '—'}</p>
         </div>
-        <Button className="bg-gradient-to-r from-primary to-blue-600 px-8" onClick={() => setLocation(`/events/${id}/register`)}>
-          Get Tickets
+        <Button className="bg-gradient-to-r from-primary to-blue-600 px-8" onClick={goToRegister}>
+          {((eventData?.price || 0) > 0) ? 'Get Tickets' : 'Register Free'}
         </Button>
       </div>
     </>

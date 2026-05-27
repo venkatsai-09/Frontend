@@ -8,13 +8,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
-import { useFetch } from "@/lib/backend";
+import { useEvents } from '@/services/eventClient';
 
 export default function AttendeeHome() {
-  const [savedEvents, setSavedEvents] = useState<number[]>([]);
-  const { data: events, isLoading } = useFetch<Array<any>>("/api/events");
+  const [savedEvents, setSavedEvents] = useState<string[]>([]);
+  const { data: events, isLoading } = useEvents();
 
-  const toggleSave = (id: number) => {
+  const toggleSave = (id: string) => {
     setSavedEvents(prev => prev.includes(id) ? prev.filter(eId => eId !== id) : [...prev, id]);
   };
 
@@ -43,41 +43,41 @@ export default function AttendeeHome() {
           {!isLoading && events && events.length > 0 && events.map((event) => (
             <Link key={event.id} href={`/events/${event.id}`}>
               <Card className="glass-panel overflow-hidden flex flex-col group border-white/5 hover:border-primary/50 transition-all duration-300 cursor-pointer h-full">
-                <div className={`h-40 bg-gradient-to-br ${event.gradient} relative`}>
+                  <div className={`h-40 relative`} style={{ backgroundImage: event.image ? `url(${event.image})` : undefined, backgroundSize: 'cover', backgroundPosition: 'center' }}>
                   <Badge className="absolute top-4 left-4 bg-background/50 backdrop-blur-md text-foreground border-none">
                     {event.category}
                   </Badge>
-                  <Button 
+                      <Button 
                     variant="ghost" 
                     size="icon" 
                     className="absolute top-4 right-4 bg-background/50 backdrop-blur-md hover:bg-background/80 text-foreground border-none rounded-full h-8 w-8"
                     onClick={(e) => {
                       e.preventDefault();
-                      toggleSave(event.id);
+                      toggleSave(event.id as string);
                     }}
                   >
-                    <Heart className={`w-4 h-4 ${savedEvents.includes(event.id) ? "fill-red-500 text-red-500" : ""}`} />
+                    <Heart className={`w-4 h-4 ${savedEvents.includes(event.id as string) ? "fill-red-500 text-red-500" : ""}`} />
                   </Button>
                 </div>
                 
                 <CardContent className="pt-6 flex-1">
-                    <h3 className="text-xl font-semibold mb-2 text-foreground group-hover:text-primary transition-colors line-clamp-1">{event.title || event.name}</h3>
+                    <h3 className="text-xl font-semibold mb-2 text-foreground group-hover:text-primary transition-colors line-clamp-1">{event.title}</h3>
                   <div className="space-y-2 text-sm text-muted-foreground">
                     <div className="flex items-center">
                       <Calendar className="w-4 h-4 mr-2 text-primary/70" /> {event.date}
                     </div>
                     <div className="flex items-center">
-                      <MapPin className="w-4 h-4 mr-2 text-primary/70" /> {event.location}
+                      <MapPin className="w-4 h-4 mr-2 text-primary/70" /> {event.city ?? event.location}
                     </div>
                     <div className="flex items-center">
-                      <Star className="w-4 h-4 mr-2 text-yellow-500" /> {event.rating}/5
+                      <Star className="w-4 h-4 mr-2 text-yellow-500" /> {"—"}
                     </div>
                   </div>
                 </CardContent>
 
                 <CardFooter className="pt-4 border-t border-white/10 flex justify-between items-center">
                     <span className="font-semibold text-lg text-foreground">
-                    {event.price === 0 ? "Free" : `₹${event.price}`}
+                    {event.price === 0 ? "Free" : event.price ? `₹${event.price}` : "—"}
                   </span>
                   <Button size="sm" className="bg-primary hover:bg-primary/90">
                     Register

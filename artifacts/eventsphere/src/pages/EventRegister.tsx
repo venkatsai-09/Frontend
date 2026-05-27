@@ -1,7 +1,10 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useRoute, useLocation } from "wouter";
 import { ArrowLeft, Ticket, Calendar, MapPin } from "lucide-react";
-import { useFetch } from "@/lib/backend";
+import { useEvent } from '@/services/eventClient';
+import { safeText, defaultTicketFromEvent } from '@/utils/renderUtils';
+import { createTicket } from '@/services/ticketClient';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,9 +22,37 @@ export default function EventRegister() {
     tickets: 1,
   });
 
-  const { data: event, isLoading } = useFetch<any>(id ? `/api/events/${id}` : null);
+  // determine selected ticket and read query params
+  const { data: event, isLoading } = useEvent(id ?? null);
+  const { user } = useAuth();
 
-  const totalAmount = (event?.price || 0) * formData.tickets;
+  // ticket options (fallback to single general ticket using event.price)
+  const ticketOptions = event?.tickets || (event ? [{ id: 'general', name: 'General', price: event?.price || 0 }] : []);
+  const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
+
+  // read query params for preselected ticket and quantity
+  useEffect(() => {
+    try {
+      const qp = new URLSearchParams(window.location.search);
+      const preTicketId = qp.get('ticketId');
+      const preTickets = parseInt(qp.get('tickets') || '') || 0;
+      if (preTickets > 0) setFormData(prev => ({ ...prev, tickets: preTickets }));
+      if (preTicketId) setSelectedTicketId(preTicketId);
+    } catch (e) {
+      // ignore
+    }
+  }, []);
+
+  // default to first ticket option when available
+  useEffect(() => {
+    if (!selectedTicketId && ticketOptions && ticketOptions.length > 0) {
+      setSelectedTicketId(ticketOptions[0].id);
+    }
+  }, [ticketOptions, selectedTicketId]);
+
+  const selectedTicket = useMemo(() => ticketOptions.find((t:any) => t.id === selectedTicketId) || ticketOptions[0] || null, [ticketOptions, selectedTicketId]);
+
+  const totalAmount = (selectedTicket?.price || 0) * formData.tickets;
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -33,13 +64,36 @@ export default function EventRegister() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (event?.isPaid) {
-      // Store checkout info in session/state and navigate to payment
-      setLocation("/payment");
-    } else {
-      // Direct registration for free events
-      setLocation("/ticket-success");
-    }
+    (async () => {
+      try {
+        // simulate payment if needed
+        if ((event?.price || 0) > 0) {
+          // Simulate payment success (could show a modal or external flow)
+          // For demo: small timeout
+          await new Promise((res) => setTimeout(res, 800));
+        }
+
+        const attendeeName = formData.name || user?.name || 'Guest User';
+        const attendeeEmail = formData.email || user?.email || '';
+
+        const { ticketId } = await createTicket({
+          eventId: id as string,
+          eventTitle: event?.title || '',
+          attendeeName,
+          attendeeEmail,
+          ticketType: selectedTicket?.id || 'general',
+          ticketName: selectedTicket?.name || 'General',
+          unitPrice: selectedTicket?.price || 0,
+          quantity: formData.tickets,
+          totalPrice: (selectedTicket?.price || 0) * formData.tickets,
+        });
+
+        // Navigate to success page - pass ticket id in query if desired
+        setLocation('/ticket-success');
+      } catch (err) {
+        console.error('Registration error', err);
+      }
+    })();
   };
 
   return (
@@ -115,8 +169,27 @@ export default function EventRegister() {
                     />
                   </div>
 
+                  {/* Ticket Type Selector (if multiple) */}
+                  {ticketOptions.length > 1 && (
+                    <div className="space-y-2">
+                      <Label htmlFor="ticketType">Ticket Type</Label>
+                      <div className="flex gap-2">
+                        {ticketOptions.map((t: any) => (
+                          <button
+                            key={t.id}
+                            type="button"
+                            onClick={() => setSelectedTicketId(t.id)}
+                            className={`px-3 py-2 rounded-md border ${selectedTicketId === t.id ? 'border-primary bg-primary/5' : 'border-white/10'} text-foreground`}
+                          >
+                            {t.name} - ₹{t.price}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   <Button type="submit" disabled={isLoading} className="w-full h-12 text-lg font-semibold bg-gradient-to-r from-primary to-blue-600 hover:shadow-lg hover:shadow-primary/25 transition-all duration-300">
-                    {isLoading ? 'Loading…' : (event?.isPaid ? `Buy Ticket - ₹${totalAmount}` : "Register Now")}
+                    {isLoading ? 'Loading…' : ((event?.price || 0) > 0 ? `Buy Ticket - ₹${totalAmount}` : "Register Free")}
                   </Button>
                 </form>
               </CardContent>
@@ -140,8 +213,8 @@ export default function EventRegister() {
                   <div className="flex gap-3 text-sm">
                     <MapPin className="w-5 h-5 text-primary" />
                     <div>
-                      <p className="font-medium text-foreground">{event?.venue}</p>
-                      <p className="text-muted-foreground text-xs">Show on map</p>
+                      <p className="font-medium text-foreground">{safeText((event?.venue as any)?.name ?? event?.venue, 'Venue TBD')}</p>
+                      <p className="text-muted-foreground text-xs">{safeText((event?.venue as any)?.city, '') || 'Show on map'}</p>
                     </div>
                   </div>
                 </div>

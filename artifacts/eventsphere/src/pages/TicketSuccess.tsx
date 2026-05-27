@@ -1,13 +1,16 @@
 import { useLocation } from "wouter";
 import { useEffect, useState } from "react";
 import { Check, Download, Home, Calendar, MapPin, User, Ticket as TicketIcon } from "lucide-react";
+import { safeText } from '@/utils/renderUtils';
+import QRCode from 'react-qr-code';
+import html2canvas from 'html2canvas';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
 export default function TicketSuccess() {
   const [, setLocation] = useLocation();
 
-  // Try to load latest ticket from backend, fallback to placeholders
+  // Try to load latest ticket from Firestore tickets collection, fallback to placeholders
   const [ticketData, setTicketData] = useState<any>({
     eventName: '',
     attendeeName: '',
@@ -15,18 +18,23 @@ export default function TicketSuccess() {
     venue: '',
     ticketId: '',
     type: '',
+    quantity: 1,
+    unitPrice: 0,
+    totalPrice: 0,
   });
 
-  // attempt fetch (best-effort)
   useEffect(() => {
     let mounted = true;
     (async () => {
       try {
-        const res = await fetch('/api/tickets/latest');
-        if (res.ok) {
-          const json = await res.json();
-          if (mounted) setTicketData(json);
-        }
+        const { collection, query, orderBy, getDocs } = await import('firebase/firestore');
+        const { db } = await import('@/firebase/config');
+        const { COLLECTIONS } = await import('@/constants/collections');
+
+        const q = query(collection(db, COLLECTIONS.TICKETS), orderBy('createdAt', 'desc'));
+        const snap = await getDocs(q);
+        const doc = snap.docs[0];
+        if (doc && mounted) setTicketData({ ...(doc.data() as any), id: doc.id });
       } catch (e) {
         // ignore - use placeholders
       }
@@ -61,11 +69,11 @@ export default function TicketSuccess() {
               <div className="md:col-span-2 space-y-6">
                 <div>
                   <div className="inline-flex items-center px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-xs font-medium text-primary mb-3">
-                    {ticketData.type}
+                    {safeText(ticketData?.type, '')}
                   </div>
-                  <h2 className="text-2xl font-bold mb-1">{ticketData.eventName}</h2>
+                  <h2 className="text-2xl font-bold mb-1">{safeText(ticketData?.eventName, '')}</h2>
                   <p className="text-muted-foreground flex items-center gap-2">
-                    <Calendar className="w-4 h-4" /> {ticketData.date}
+                    <Calendar className="w-4 h-4" /> {safeText(ticketData?.date, '')}
                   </p>
                 </div>
 
@@ -73,13 +81,13 @@ export default function TicketSuccess() {
                   <div className="space-y-1">
                     <span className="text-xs uppercase tracking-wider text-muted-foreground">Attendee</span>
                     <p className="font-medium flex items-center gap-2">
-                      <User className="w-4 h-4 text-primary" /> {ticketData.attendeeName}
+                      <User className="w-4 h-4 text-primary" /> {safeText(ticketData?.attendeeName, '')}
                     </p>
                   </div>
                   <div className="space-y-1">
                     <span className="text-xs uppercase tracking-wider text-muted-foreground">Ticket ID</span>
                     <p className="font-medium flex items-center gap-2 text-primary">
-                      <TicketIcon className="w-4 h-4" /> {ticketData.ticketId}
+                      <TicketIcon className="w-4 h-4" /> {safeText(ticketData?.ticketId, '')}
                     </p>
                   </div>
                 </div>
@@ -87,33 +95,26 @@ export default function TicketSuccess() {
                 <div className="space-y-1">
                   <span className="text-xs uppercase tracking-wider text-muted-foreground">Venue</span>
                   <p className="font-medium flex items-center gap-2">
-                    <MapPin className="w-4 h-4 text-primary" /> {ticketData.venue}
+                    <MapPin className="w-4 h-4 text-primary" /> {safeText(ticketData?.venue, '')}
                   </p>
                 </div>
               </div>
 
               {/* QR Code Placeholder */}
               <div className="flex flex-col items-center justify-center p-6 bg-white rounded-2xl group-hover:scale-105 transition-transform duration-500">
-                <div className="w-32 h-32 relative bg-white">
-                  {/* Grid pattern for mock QR */}
-                  <div className="grid grid-cols-8 grid-rows-8 gap-0.5 w-full h-full opacity-90">
-                    {Array.from({ length: 64 }).map((_, i) => {
-                      // deterministic pattern based on ticketId to avoid demo randomness
-                      const seed = (ticketData?.ticketId || '0').split('').reduce((a:any,b:any)=>a + b.charCodeAt(0), 0) + i;
-                      const filled = seed % 3 === 0;
-                      return <div key={i} className={`${filled ? 'bg-black' : 'bg-transparent'} rounded-[1px]`} />
-                    })}
-                  </div>
-                  {/* QR Core boxes */}
-                  <div className="absolute top-0 left-0 w-8 h-8 border-[3px] border-black bg-white flex items-center justify-center p-1">
-                    <div className="w-full h-full bg-black" />
-                  </div>
-                  <div className="absolute top-0 right-0 w-8 h-8 border-[3px] border-black bg-white flex items-center justify-center p-1">
-                    <div className="w-full h-full bg-black" />
-                  </div>
-                  <div className="absolute bottom-0 left-0 w-8 h-8 border-[3px] border-black bg-white flex items-center justify-center p-1">
-                    <div className="w-full h-full bg-black" />
-                  </div>
+                <div className="w-32 h-32 relative bg-white flex items-center justify-center">
+                  {/* Render a real, scannable QR code. Value is a safe string EVENTSPHERE:<id> */}
+                  {(() => {
+                    const id = ticketData?.id || ticketData?.ticketId || '';
+                    const qrValue = id ? `EVENTSPHERE:${id}` : '';
+                    return qrValue ? (
+                      <div style={{ width: 128, height: 128 }} aria-hidden>
+                        <QRCode value={qrValue} size={128} />
+                      </div>
+                    ) : (
+                      <div className="text-xs text-muted-foreground">No QR available</div>
+                    );
+                  })()}
                 </div>
                 <p className="mt-4 text-[10px] text-black font-bold tracking-widest uppercase">Scan at Entrance</p>
               </div>
@@ -122,9 +123,25 @@ export default function TicketSuccess() {
         </Card>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Button className="h-12 px-8 font-semibold bg-white text-black hover:bg-white/90 gap-2">
+          <Button className="h-12 px-8 font-semibold bg-white text-black hover:bg-white/90 gap-2" onClick={async () => {
+            // Click handler: render the ticket card and download as PNG
+            try {
+              const el = document.querySelector('.max-w-2xl > .mb-12') as HTMLElement | null;
+              if (!el) return;
+              const canvas = await html2canvas(el, { backgroundColor: null });
+              const dataUrl = canvas.toDataURL('image/png');
+              const a = document.createElement('a');
+              a.href = dataUrl;
+              a.download = `${safeText(ticketData?.ticketId, 'ticket')}.png`;
+              document.body.appendChild(a);
+              a.click();
+              a.remove();
+            } catch (e) {
+              console.error('Download failed', e);
+            }
+          }}>
             <Download className="w-5 h-5" />
-            Download Ticket (PDF)
+            Download Ticket (PNG)
           </Button>
           <Button 
             variant="outline" 

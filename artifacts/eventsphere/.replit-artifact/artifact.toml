@@ -15,10 +15,10 @@ paths = [ "/" ]
 localPort = 19723
 
 [services.development]
-run = "pnpm --filter @workspace/eventsphere run dev"
+run = "npm --prefix . run dev"
 
 [services.production]
-build = [ "pnpm", "--filter", "@workspace/eventsphere", "run", "build" ]
+build = [ "npm", "--prefix", "./", "run", "build" ]
 publicDir = "artifacts/eventsphere/dist/public"
 serve = "static"
 

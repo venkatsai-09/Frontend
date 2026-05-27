@@ -1,4 +1,4 @@
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -32,7 +32,10 @@ const signupSchema = z
     path: ["confirmPassword"],
   });
 
+import { signup as signupClient } from '@/services/authClient';
+
 export default function Signup() {
+  const [, setLocation] = useLocation();
   const form = useForm<z.infer<typeof signupSchema>>({
     resolver: zodResolver(signupSchema),
     defaultValues: {
@@ -44,24 +47,20 @@ export default function Signup() {
   });
 
   const onSubmit = (values: z.infer<typeof signupSchema>) => {
+    console.log("REAL SIGNUP FILE EXECUTING");
+    
     // Attempt to call backend signup endpoint if available
     (async () => {
       try {
-        const res = await fetch("/api/auth/signup", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(values),
-        });
-        if (!res.ok) {
-          const text = await res.text().catch(() => res.statusText);
-          // show a simple client-side notification for now
-          console.error("Signup failed:", text || res.statusText);
-        } else {
-          // redirect or show success - keep console log for now
-          console.log("Signup successful");
-        }
+        // Use Firebase client signup which creates auth user and Firestore profile
+        const profile = await signupClient(values.email.trim(), values.password, values.fullName.trim(), values.role as any);
+        console.log('Signup successful', profile);
+        // Navigate based on role
+        setLocation(profile.role === 'organizer' ? '/organizer' : '/attendee');
       } catch (err) {
         console.error("Signup request error:", err);
+        // Surface basic form error
+        form.setError('email', { type: 'manual', message: (err as Error).message || 'Signup failed' });
       }
     })();
   };

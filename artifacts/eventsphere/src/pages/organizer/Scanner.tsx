@@ -1,133 +1,171 @@
-import { useState } from "react";
-import { Camera, QrCode, CheckCircle2, User, Ticket } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { OrganizerLayout } from "@/components/layout/OrganizerLayout";
-import { useFetch } from "@/lib/backend";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogDescription,
-  DialogFooter
-} from "@/components/ui/dialog";
+import React, { useEffect, useRef, useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { CheckCircle, XCircle } from 'lucide-react';
+import jsQR from 'jsqr';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '@/firebase/config';
+import { COLLECTIONS } from '@/constants/collections';
+import { safeText } from '@/utils/renderUtils';
 
-export default function Scanner() {
-  const [isScanning, setIsScanning] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
+type ScanResult =
+  | { raw: string; status: 'checking'; info: null }
+  | { raw: string; status: 'invalid'; info: null }
+  | { raw: string; status: 'used'; info: any }
+  | { raw: string; status: 'valid'; info: any };
 
-  const handleScan = () => {
-    setIsScanning(true);
-    // Simulate a successful scan after 2 seconds
-    setTimeout(() => {
-      setIsScanning(false);
-      // In a real app the scan would return an id or payload; here we toggle the dialog
-      setShowSuccess(true);
-    }, 2000);
-  };
+export default function OrganizerScanner() {
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [scanning, setScanning] = useState(false);
+  const [lastResult, setLastResult] = useState<ScanResult | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let raf = 0;
+    let stream: MediaStream | null = null;
+
+    async function startCamera() {
+      setError(null);
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          await videoRef.current.play();
+          setScanning(true);
+          tick();
+        }
+      } catch (e: any) {
+        setError('Camera access denied or not available');
+      }
+    }
+
+    function stopCamera() {
+      setScanning(false);
+      if (stream) {
+        stream.getTracks().forEach((t) => t.stop());
+        stream = null;
+      }
+      cancelAnimationFrame(raf);
+    }
+
+    function tick() {
+      if (!videoRef.current || !canvasRef.current) {
+        raf = requestAnimationFrame(tick);
+        return;
+      }
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        raf = requestAnimationFrame(tick);
+        return;
+      }
+      if (video.videoWidth === 0 || video.videoHeight === 0) {
+        raf = requestAnimationFrame(tick);
+        return;
+      }
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      try {
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const code = jsQR(imageData.data, imageData.width, imageData.height);
+        if (code) {
+          handleCode(code.data);
+        }
+      } catch (e) {
+        // ignore read errors
+      }
+      raf = requestAnimationFrame(tick);
+    }
+
+    startCamera();
+    return () => {
+      stopCamera();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function handleCode(data: string) {
+    if (lastResult && lastResult.raw === data) return;
+    setLastResult({ raw: data, status: 'checking', info: null });
+    try {
+      // Accept both raw IDs and prefixed format: EVENTSPHERE:<ticketId>
+      let ticketId = data;
+      if (typeof ticketId === 'string' && ticketId.startsWith('EVENTSPHERE:')) {
+        ticketId = ticketId.replace(/^EVENTSPHERE:/, '');
+      } else {
+        // avoid accepting objects/stringified objects as the identifier — only accept simple strings
+        try {
+          const parsed = JSON.parse(data);
+          if (parsed && typeof parsed === 'object' && typeof parsed.ticketId === 'string') {
+            ticketId = parsed.ticketId;
+          }
+        } catch {}
+      }
+
+      const d = await getDoc(doc(db, COLLECTIONS.TICKETS, ticketId));
+      if (!d.exists()) {
+        setLastResult({ raw: data, status: 'invalid', info: null });
+        return;
+      }
+      const ticket = d.data();
+      if (ticket?.used) {
+        setLastResult({ raw: data, status: 'used', info: ticket });
+        return;
+      }
+      setLastResult({ raw: data, status: 'valid', info: ticket });
+    } catch (e) {
+      setLastResult({ raw: data, status: 'invalid', info: null });
+    }
+  }
 
   return (
-    <OrganizerLayout title="Ticket Scanner">
-      <div className="max-w-2xl mx-auto">
-        <Card className="glass-panel border-white/10 overflow-hidden">
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl">Scan QR Code</CardTitle>
-            <CardDescription>Point your camera at the attendee's ticket QR code</CardDescription>
+    <div className="min-h-screen bg-background p-6">
+      <div className="max-w-4xl mx-auto">
+        <Card>
+          <CardHeader>
+            <CardTitle>Organizer — Ticket Scanner</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-8">
-            {/* Camera Placeholder */}
-            <div className="relative aspect-square max-w-sm mx-auto rounded-3xl overflow-hidden border-2 border-dashed border-primary/30 bg-white/5 flex items-center justify-center group">
-              {isScanning ? (
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <div className="w-full h-1 bg-primary absolute top-0 animate-[scan_2s_linear_infinite]" />
-                  <Camera className="w-16 h-16 text-primary/40 animate-pulse" />
-                  <p className="mt-4 text-sm font-medium text-primary animate-pulse">Scanning...</p>
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center text-muted-foreground">
-                  <Camera className="w-20 h-20 mb-4 group-hover:text-primary transition-colors" />
-                  <p className="text-sm">Camera preview will appear here</p>
-                </div>
-              )}
-              
-              {/* Corner markers */}
-              <div className="absolute top-8 left-8 w-12 h-12 border-t-4 border-l-4 border-primary rounded-tl-xl" />
-              <div className="absolute top-8 right-8 w-12 h-12 border-t-4 border-r-4 border-primary rounded-tr-xl" />
-              <div className="absolute bottom-8 left-8 w-12 h-12 border-b-4 border-l-4 border-primary rounded-bl-xl" />
-              <div className="absolute bottom-8 right-8 w-12 h-12 border-b-4 border-r-4 border-primary rounded-br-xl" />
-            </div>
-
-            <div className="flex flex-col gap-4">
-              <Button 
-                onClick={handleScan}
-                disabled={isScanning}
-                className="w-full h-14 text-lg font-bold bg-primary hover:bg-primary/90 shadow-lg shadow-primary/25 gap-2"
-              >
-                {isScanning ? (
-                  <>Processing...</>
-                ) : (
-                  <>
-                    <QrCode className="w-6 h-6" />
-                    Start Camera & Scan
-                  </>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <video ref={videoRef} className="w-full rounded-lg bg-black" muted playsInline />
+                <canvas ref={canvasRef} className="hidden" />
+                {error && <p className="text-sm text-red-400">{error}</p>}
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold mb-2">Scan result</h3>
+                {!lastResult && <p className="text-sm text-muted-foreground">No ticket scanned yet. Point camera at QR code.</p>}
+                {lastResult && lastResult.status === 'checking' && <p>Checking…</p>}
+                {lastResult && lastResult.status === 'invalid' && (
+                  <div className="flex items-center gap-2 text-red-500"><XCircle /> Invalid ticket</div>
                 )}
-              </Button>
-              <p className="text-center text-xs text-muted-foreground">
-                Supported formats: QR Code, Barcode, DataMatrix
-              </p>
+                {lastResult && lastResult.status === 'used' && (
+                  <div>
+                    <div className="flex items-center gap-2 text-yellow-500"><XCircle /> Ticket already used</div>
+                    <div className="mt-4">
+                      <p><strong>Ticket ID:</strong> {safeText((lastResult.info as any)?.ticketId)}</p>
+                      <p><strong>Attendee:</strong> {safeText((lastResult.info as any)?.attendeeName)}</p>
+                    </div>
+                  </div>
+                )}
+                {lastResult && lastResult.status === 'valid' && (
+                  <div>
+                    <div className="flex items-center gap-2 text-green-500"><CheckCircle /> Valid ticket</div>
+                    <div className="mt-4">
+                      <p><strong>Ticket ID:</strong> {safeText((lastResult.info as any)?.ticketId)}</p>
+                      <p><strong>Attendee:</strong> {safeText((lastResult.info as any)?.attendeeName)}</p>
+                      <p><strong>Event:</strong> {safeText((lastResult.info as any)?.eventTitle)}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </CardContent>
         </Card>
-
-        {/* Success Popup */}
-        <Dialog open={showSuccess} onOpenChange={setShowSuccess}>
-          <DialogContent className="glass-panel border-white/10 text-foreground sm:max-w-md">
-            <DialogHeader>
-              <div className="mx-auto w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mb-4">
-                <CheckCircle2 className="w-10 h-10 text-green-500" />
-              </div>
-              <DialogTitle className="text-2xl text-center">Ticket Validated!</DialogTitle>
-              <DialogDescription className="text-center">
-                Attendee has been successfully checked in.
-              </DialogDescription>
-            </DialogHeader>
-            
-            <div className="p-4 rounded-2xl bg-white/5 space-y-4 my-4">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
-                  <User className="w-6 h-6 text-primary" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground font-medium">Attendee Name</p>
-                  <p className="font-bold">{ /* Replace with scanned result when available */ }
-                    {showSuccess ? (/* we could fetch the last scan result from API */ 'Attendee') : '—'}
-                  </p>
-                </div>
-              </div>
-              
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full bg-blue-500/20 flex items-center justify-center">
-                  <Ticket className="w-6 h-6 text-blue-500" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground font-medium">Ticket Type</p>
-                  <p className="font-bold">{showSuccess ? 'General Admission' : '—'}</p>
-                </div>
-              </div>
-            </div>
-
-            <DialogFooter>
-              <Button 
-                onClick={() => setShowSuccess(false)}
-                className="w-full bg-primary"
-              >
-                Done
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
       </div>
-    </OrganizerLayout>
+    </div>
   );
 }
